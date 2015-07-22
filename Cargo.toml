@@ -1,0 +1,22 @@
+[package]
+
+name = "dynamin"
+version = "0.0.1"
+authors = ["Jordan Miner <jminer7@gmail.com>"]
+description = "Dynamin is a GUI library."
+keywords = ["gui"]
+license = "MPL-2.0"
+
+[dependencies]
+#event-loop = "*"
+#dynamin2d = "*"
+event-loop = { path = "../event-loop" }
+dynamin2d = { path = "../dynamin2d" }
+
+[target.i686-pc-windows-gnu.dependencies]
+#winapi = "*"
+#kernel32-sys = "*"
+#user32-sys = "*"
+winapi = { path = "../winapi-rs" }
+kernel32-sys = { path = "../winapi-rs/lib/kernel32-sys" }
+user32-sys = { path = "../winapi-rs/lib/user32-sys" }
