@@ -1,7 +1,6 @@
-#![feature(collections)]
 #[allow(dead_code)]
 
-extern crate dynamin2d;
+extern crate zaffre;
 
 pub use self::control::{Control, Visibility};
 pub use self::window::{Window, WindowBorderStyle};

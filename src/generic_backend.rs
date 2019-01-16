@@ -1,7 +1,5 @@
 
-extern crate dynamin2d;
-
-use dynamin2d::{Point, Size};
+use zaffre::{Point2, Size2};
 use super::Visibility;
 
 //pub trait GenericCursorBackend {
@@ -10,10 +8,10 @@ use super::Visibility;
 
 pub trait GenericWindowBackend {
 	fn new() -> Self;
-    //fn location(&self) -> Point;
-    //fn set_location(&mut self, location: &Point);
-    //fn size(&self) -> Size;
-    //fn set_size(&mut self, size: &Size);
+    //fn location(&self) -> Point2<f64>;
+    //fn set_location(&mut self, location: &Point2<f64>);
+    //fn size(&self) -> Size2<f64>;
+    //fn set_size(&mut self, size: &Size2<f64>);
     fn set_text(&mut self, text: &str);
 
     fn visibility(&self) -> Visibility;

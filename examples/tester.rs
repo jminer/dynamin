@@ -1,11 +1,11 @@
 
 extern crate event_loop;
 extern crate dynamin;
-extern crate dynamin2d;
+extern crate zaffre;
 
 use event_loop::EventLoop;
 use dynamin::{Control, Visibility, Window};
-use dynamin2d::Point;
+use zaffre::Point2;
 
 fn main() {
     let mut win = Window::new();

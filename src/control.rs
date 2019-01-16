@@ -1,7 +1,5 @@
 
-extern crate dynamin2d;
-
-use dynamin2d::{Point, Size};
+use zaffre::{Point2, Size2};
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum Visibility {
@@ -14,19 +12,19 @@ pub trait Control {
     fn visibility(&self) -> Visibility;
     fn set_visibility(&mut self, visibility: Visibility);
 
-    fn location(&self) -> Point;
-    fn set_location(&mut self, location: &Point);
+    fn location(&self) -> Point2<f64>;
+    fn set_location(&mut self, location: &Point2<f64>);
 
-    fn size(&self) -> Size;
-    fn set_size(&mut self, size: &Size);
+    fn size(&self) -> Size2<f64>;
+    fn set_size(&mut self, size: &Size2<f64>);
 
     fn repaint_later(&self);
 }
 
 pub struct SubControl {
     visibility: Visibility,
-	location: Point<f64>,
-	size: Size<f64>
+	location: Point2<f64>,
+	size: Size2<f64>
 }
 
 impl Control for SubControl {
@@ -38,20 +36,20 @@ impl Control for SubControl {
         self.visibility = visibility;
     }
 
-    fn location(&self) -> Point {
+    fn location(&self) -> Point2<f64> {
         self.location
     }
 
-	fn set_location(&mut self, location: &Point) {
+	fn set_location(&mut self, location: &Point2<f64>) {
 		self.location = *location;
 		self.repaint_later();
 	}
 
-    fn size(&self) -> Size {
+    fn size(&self) -> Size2<f64> {
         self.size
     }
 
-	fn set_size(&mut self, size: &Size) {
+	fn set_size(&mut self, size: &Size2<f64>) {
 		self.size = *size;
 		self.repaint_later();
 	}

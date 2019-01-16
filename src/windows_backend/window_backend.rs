@@ -1,27 +1,23 @@
 
 extern crate winapi;
-extern crate kernel32;
-extern crate user32;
 
 use generic_backend::GenericWindowBackend;
 use super::super::{Visibility, WindowBorderStyle};
 use std::ptr;
 use std::ffi::OsStr;
 use std::mem;
+use std::os::raw::c_int;
 use std::os::windows::ffi::OsStrExt;
 use std::sync::{Once, ONCE_INIT};
-use self::winapi::*;
-use self::kernel32::{GetModuleHandleW};
-use self::user32::{
-    CreateWindowExW,
-    DefWindowProcW,
-    DestroyWindow,
-    GetWindowLongW,
-    RegisterClassExW,
-    SetWindowTextW,
-    ShowWindow,
+use self::winapi::shared::{
+    minwindef::*,
+    windef::*,
 };
-use dynamin2d::{Point, Size};
+use self::winapi::um::{
+    libloaderapi::*,
+    winuser::*,
+};
+use zaffre::{Point2, Size2};
 
 const WINDOW_CLASS_NAME: &'static str = "DynaminWindowRust";
 
@@ -32,8 +28,8 @@ pub struct WindowBackend {
 	handle: HWND,
 	owner: HWND,
 	text: String,
-	location: Point,
-	size: Size,
+	location: Point2<f64>,
+	size: Size2<f64>,
 	border_style: WindowBorderStyle,
 }
 
@@ -49,6 +45,7 @@ impl ToWide for str {
     }
 }
 
+#[allow(non_snake_case)]
 unsafe extern "system"
 fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT {
     DefWindowProcW(hwnd, uMsg, wParam, lParam)
@@ -64,7 +61,7 @@ impl WindowBackend {
 
 	fn window_styles(&self) -> (DWORD, DWORD) {
 	    let (mut style, mut ex_style) = (0, 0);
-		if(self.handle_created()) {
+		if self.handle_created() {
 		    unsafe {
                 style = GetWindowLongW(self.handle, GWL_STYLE) as DWORD;
                 ex_style = GetWindowLongW(self.handle, GWL_EXSTYLE) as DWORD;
@@ -122,10 +119,10 @@ impl WindowBackend {
                                           class_name.as_ptr(),
                                           text.as_ptr(),
                                           style,
-                                          self.location.x() as c_int,
-                                          self.location.y() as c_int,
-                                          self.size.width() as c_int,
-                                          self.size.height() as c_int,
+                                          self.location.x as c_int,
+                                          self.location.y as c_int,
+                                          self.size.width as c_int,
+                                          self.size.height as c_int,
                                           self.owner,
                                           ptr::null_mut(),
                                           ptr::null_mut(),
@@ -161,8 +158,8 @@ impl GenericWindowBackend for WindowBackend {
 		    handle: ptr::null_mut(),
 		    owner: ptr::null_mut(),
 		    text: "".to_string(),
-		    location: Point(0.0, 0.0),
-		    size: Size(400.0, 300.0),
+		    location: Point2::new(0.0, 0.0),
+		    size: Size2::new(400.0, 300.0),
 		    border_style: WindowBorderStyle::Normal,
 		}
 	}

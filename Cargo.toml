@@ -9,14 +9,10 @@ license = "MPL-2.0"
 
 [dependencies]
 #event-loop = "*"
-#dynamin2d = "*"
+#zaffre = "*"
 event-loop = { path = "../event-loop" }
-dynamin2d = { path = "../dynamin2d" }
+zaffre = { path = "../zaffre" }
 
-[target.i686-pc-windows-gnu.dependencies]
-#winapi = "*"
-#kernel32-sys = "*"
-#user32-sys = "*"
-winapi = { path = "../winapi-rs" }
-kernel32-sys = { path = "../winapi-rs/lib/kernel32-sys" }
-user32-sys = { path = "../winapi-rs/lib/user32-sys" }
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["libloaderapi", "windef", "winuser"] }
+#winapi = { path = "../winapi-rs" }

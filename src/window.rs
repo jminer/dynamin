@@ -1,7 +1,5 @@
 
-extern crate dynamin2d;
-
-use dynamin2d::{Point, Size};
+use zaffre::{Point2, Size2};
 use super::generic_backend::GenericWindowBackend;
 use super::backend::WindowBackend;
 use super::{Control, Visibility};
@@ -36,18 +34,18 @@ impl Control for Window {
         self.backend.set_visibility(visibility)
     }
 
-    fn location(&self) -> Point {
+    fn location(&self) -> Point2<f64> {
         unimplemented!();
     }
 
-    fn set_location(&mut self, location: &Point) {
+    fn set_location(&mut self, location: &Point2<f64>) {
     }
 
-    fn size(&self) -> Size {
+    fn size(&self) -> Size2<f64> {
         unimplemented!();
     }
 
-    fn set_size(&mut self, size: &Size) {
+    fn set_size(&mut self, size: &Size2<f64>) {
     }
 
     fn repaint_later(&self) {
