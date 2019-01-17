@@ -17,7 +17,11 @@ use self::winapi::um::{
     libloaderapi::*,
     winuser::*,
 };
+
+use smallvec::SmallVec;
 use zaffre::{Point2, Size2};
+
+use super::str_to_wide_vec;
 
 const WINDOW_CLASS_NAME: &'static str = "DynaminWindowRust";
 
@@ -53,7 +57,7 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
 
 impl WindowBackend {
 	fn delete_handle(&mut self) {
-	    if self.handle != ptr::null_mut() {
+	    if !self.handle.is_null() {
 	        unsafe { DestroyWindow(self.handle); }
 	        self.handle = ptr::null_mut();
 	    }
@@ -93,15 +97,15 @@ impl WindowBackend {
 	fn recreate_handle(&mut self) {
 	    REGISTER_WINDOW_CLASS.call_once(|| {
             unsafe {
-                let mut class_name: Vec<u16> = OsStr::new(WINDOW_CLASS_NAME).encode_wide().collect();
-                class_name.push(0);
+                let mut class_name_buf = SmallVec::<[u16; 32]>::new();
+                let wide_class_name = str_to_wide_vec(WINDOW_CLASS_NAME, &mut class_name_buf);
 
                 let mut wc: WNDCLASSEXW = mem::zeroed();
                 wc.cbSize = mem::size_of::<WNDCLASSEXW>() as u32;
                 wc.style = CS_DBLCLKS;
                 wc.lpfnWndProc = Some(windowProc);
                 wc.hInstance = GetModuleHandleW(ptr::null());
-                wc.lpszClassName = class_name.as_ptr();
+                wc.lpszClassName = wide_class_name;
 
                 assert!(RegisterClassExW(&wc) != 0);
             }
@@ -110,14 +114,14 @@ impl WindowBackend {
 	    let (style, ex_style) = self.window_styles();
 	    self.delete_handle();
 
-	    let mut class_name: Vec<u16> = OsStr::new(WINDOW_CLASS_NAME).encode_wide().collect();
-	    class_name.push(0);
-	    let mut text: Vec<u16> = OsStr::new(&self.text).encode_wide().collect();
-	    text.push(0);
+        let mut class_name_buf = SmallVec::<[u16; 32]>::new();
+        let wide_class_name = str_to_wide_vec(WINDOW_CLASS_NAME, &mut class_name_buf);
+        let mut text_buf = SmallVec::<[u16; 64]>::new();
+        let wide_text = str_to_wide_vec(&self.text, &mut text_buf);
 	    unsafe {
             self.handle = CreateWindowExW(ex_style,
-                                          class_name.as_ptr(),
-                                          text.as_ptr(),
+                                          wide_class_name,
+                                          wide_text,
                                           style,
                                           self.location.x as c_int,
                                           self.location.y as c_int,
@@ -132,16 +136,14 @@ impl WindowBackend {
 	}
 
 	fn handle_created(&self) -> bool {
-	    self.handle != ptr::null_mut()
+	    !self.handle.is_null()
 	}
 
 	fn handle(&mut self) -> HWND {
-	    if self.handle_created() {
-	        self.handle
-	    } else {
+	    if !self.handle_created() {
 	        self.recreate_handle();
-	        self.handle
-	    }
+        }
+        self.handle
 	}
 }
 
@@ -168,8 +170,9 @@ impl GenericWindowBackend for WindowBackend {
         self.text = text.to_owned();
         if self.handle_created() {
             unsafe {
-                let wide = self.text.to_wide();
-                SetWindowTextW(self.handle, wide.as_ptr());
+                let mut text_buf = SmallVec::<[u16; 64]>::new();
+                let wide_text = str_to_wide_vec(text, &mut text_buf);
+                SetWindowTextW(self.handle, wide_text);
             }
 		}
     }

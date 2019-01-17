@@ -1,5 +1,6 @@
 #[allow(dead_code)]
 
+extern crate smallvec;
 extern crate zaffre;
 
 pub use self::control::{Control, Visibility};

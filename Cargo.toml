@@ -11,6 +11,7 @@ license = "MPL-2.0"
 #event-loop = "*"
 #zaffre = "*"
 event-loop = { path = "../event-loop" }
+smallvec = "0.6"
 zaffre = { path = "../zaffre" }
 
 [target.'cfg(windows)'.dependencies]
