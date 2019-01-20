@@ -4,10 +4,18 @@ use super::generic_backend::GenericWindowBackend;
 use super::backend::WindowBackend;
 use super::{Control, Visibility};
 
+// TODO: screenshots of border styles
+/// The style of border around a window.
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum WindowBorderStyle {
+    /// The window has no border around it.
     None,
+    /// The window has a normal title bar and border around it.
     Normal,
+    /// The window has a border suited for a non-modal auxiliary window.
+    ///
+    /// On Windows, the title bar is smaller, there is no minimize or maximize buttons, and the
+    /// close button is smaller. On macOS, the corners may be square instead of rounded.
     Tool,
 }
 
