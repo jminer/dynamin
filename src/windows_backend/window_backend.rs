@@ -11,6 +11,7 @@ use std::os::windows::ffi::OsStrExt;
 use std::sync::{Once, ONCE_INIT};
 use self::winapi::shared::{
     minwindef::*,
+    ntdef::*,
     windef::*,
 };
 use self::winapi::um::{
@@ -35,6 +36,7 @@ pub struct WindowBackend {
 	location: Point2<f64>,
 	size: Size2<f64>,
 	border_style: WindowBorderStyle,
+    resizable: bool,
 }
 
 trait ToWide {
@@ -65,7 +67,7 @@ impl WindowBackend {
 
 	fn window_styles(&self) -> (DWORD, DWORD) {
 	    let (mut style, mut ex_style) = (0, 0);
-		if self.handle_created() {
+		if self.is_handle_created() {
 		    unsafe {
                 style = GetWindowLongW(self.handle, GWL_STYLE) as DWORD;
                 ex_style = GetWindowLongW(self.handle, GWL_EXSTYLE) as DWORD;
@@ -78,14 +80,14 @@ impl WindowBackend {
             };
             set_if(WS_DLGFRAME, self.border_style != WindowBorderStyle::None);
             set_if(WS_BORDER, self.border_style != WindowBorderStyle::None);
-            //set_if(WS_THICKFRAME,
-            //	resizable && self.border_style != WindowBorderStyle::None);
+            set_if(WS_THICKFRAME,
+            	self.resizable && self.border_style != WindowBorderStyle::None);
             set_if(WS_MINIMIZEBOX, self.border_style == WindowBorderStyle::Normal);
             //set_if(WS_MAXIMIZEBOX,
-            //	self.border_style == WindowBorderStyle::Normal && resizable &&
+            //	self.border_style == WindowBorderStyle::Normal && self.resizable &&
             //	content.max_width == 0 && content.max_height == 0);
             set_if(WS_SYSMENU, self.border_style != WindowBorderStyle::None);
-            if(self.border_style == WindowBorderStyle::Tool) {
+            if self.border_style == WindowBorderStyle::Tool {
                 ex_style |= WS_EX_TOOLWINDOW;
             } else {
                 ex_style &= !WS_EX_TOOLWINDOW;
@@ -93,6 +95,19 @@ impl WindowBackend {
 		}
         (style, ex_style)
 	}
+
+    fn update_window_styles(&self) {
+        if !self.is_handle_created() {
+            return;
+        }
+	    let (mut style, mut ex_style) = self.window_styles();
+        unsafe {
+            SetWindowLongW(self.handle, GWL_STYLE, style as LONG);
+            SetWindowLongW(self.handle, GWL_EXSTYLE, ex_style as LONG);
+            SetWindowPos(self.handle, ptr::null_mut(), 0, 0, 0, 0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+        }
+    }
 
 	fn recreate_handle(&mut self) {
 	    REGISTER_WINDOW_CLASS.call_once(|| {
@@ -135,12 +150,12 @@ impl WindowBackend {
 	    }
 	}
 
-	fn handle_created(&self) -> bool {
+	fn is_handle_created(&self) -> bool {
 	    !self.handle.is_null()
 	}
 
 	fn handle(&mut self) -> HWND {
-	    if !self.handle_created() {
+	    if !self.is_handle_created() {
 	        self.recreate_handle();
         }
         self.handle
@@ -163,12 +178,13 @@ impl GenericWindowBackend for WindowBackend {
 		    location: Point2::new(0.0, 0.0),
 		    size: Size2::new(400.0, 300.0),
 		    border_style: WindowBorderStyle::Normal,
+            resizable: true,
 		}
 	}
 
     fn set_text(&mut self, text: &str) {
         self.text = text.to_owned();
-        if self.handle_created() {
+        if self.is_handle_created() {
             unsafe {
                 let mut text_buf = SmallVec::<[u16; 64]>::new();
                 let wide_text = str_to_wide_vec(text, &mut text_buf);
@@ -187,10 +203,19 @@ impl GenericWindowBackend for WindowBackend {
             // TODO: this isn't how I did it in D
 			unsafe { ShowWindow(self.handle(), SW_SHOW); }
         } else {
-            if self.handle_created() {
+            if self.is_handle_created() {
                 unsafe { ShowWindow(self.handle, SW_HIDE); }
             }
         }
+    }
+
+    fn resizable(&self) -> bool {
+        self.resizable
+    }
+
+    fn set_resizable(&mut self, resizable: bool) {
+        self.resizable = resizable;
+        self.update_window_styles();
     }
     // enabling and disabling the close button can be done dynamically by enabling or disabling
     // the close menu item: http://blogs.msdn.com/b/oldnewthing/archive/2010/06/04/10019758.aspx

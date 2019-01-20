@@ -23,6 +23,14 @@ impl Window {
     pub fn set_text(&mut self, text: &str) {
         self.backend.set_text(text);
     }
+
+    fn resizable(&self) -> bool {
+        self.backend.resizable()
+    }
+
+    fn set_resizable(&mut self, resizable: bool) {
+        self.backend.set_resizable(resizable);
+    }
 }
 
 impl Control for Window {

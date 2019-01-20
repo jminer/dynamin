@@ -17,4 +17,8 @@ pub trait GenericWindowBackend {
     fn visibility(&self) -> Visibility;
 
     fn set_visibility(&mut self, visibility: Visibility);
+
+    fn resizable(&self) -> bool;
+
+    fn set_resizable(&mut self, resizable: bool);
 }
