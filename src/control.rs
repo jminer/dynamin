@@ -29,8 +29,8 @@ pub trait Control {
 
 pub struct SubControl {
     visibility: Visibility,
-	location: Point2<f64>,
-	size: Size2<f64>
+    location: Point2<f64>,
+    size: Size2<f64>,
 }
 
 impl Control for SubControl {
@@ -46,19 +46,19 @@ impl Control for SubControl {
         self.location
     }
 
-	fn set_location(&mut self, location: &Point2<f64>) {
-		self.location = *location;
-		self.repaint_later();
-	}
+    fn set_location(&mut self, location: &Point2<f64>) {
+        self.location = *location;
+        self.repaint_later();
+    }
 
     fn size(&self) -> Size2<f64> {
         self.size
     }
 
-	fn set_size(&mut self, size: &Size2<f64>) {
-		self.size = *size;
-		self.repaint_later();
-	}
+    fn set_size(&mut self, size: &Size2<f64>) {
+        self.size = *size;
+        self.repaint_later();
+    }
 
     fn repaint_later(&self) {
     }

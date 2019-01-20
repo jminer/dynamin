@@ -30,12 +30,12 @@ static REGISTER_WINDOW_CLASS: Once = ONCE_INIT;
 
 pub struct WindowBackend {
     visibility: Visibility,
-	handle: HWND,
-	owner: HWND,
-	text: String,
-	location: Point2<f64>,
-	size: Size2<f64>,
-	border_style: WindowBorderStyle,
+    handle: HWND,
+    owner: HWND,
+    text: String,
+    location: Point2<f64>,
+    size: Size2<f64>,
+    border_style: WindowBorderStyle,
     resizable: bool,
 }
 
@@ -58,22 +58,22 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
 }
 
 impl WindowBackend {
-	fn delete_handle(&mut self) {
-	    if !self.handle.is_null() {
-	        unsafe { DestroyWindow(self.handle); }
-	        self.handle = ptr::null_mut();
-	    }
-	}
+    fn delete_handle(&mut self) {
+        if !self.handle.is_null() {
+            unsafe { DestroyWindow(self.handle); }
+            self.handle = ptr::null_mut();
+        }
+    }
 
-	fn window_styles(&self) -> (DWORD, DWORD) {
-	    let (mut style, mut ex_style) = (0, 0);
-		if self.is_handle_created() {
-		    unsafe {
+    fn window_styles(&self) -> (DWORD, DWORD) {
+        let (mut style, mut ex_style) = (0, 0);
+        if self.is_handle_created() {
+            unsafe {
                 style = GetWindowLongW(self.handle, GWL_STYLE) as DWORD;
                 ex_style = GetWindowLongW(self.handle, GWL_EXSTYLE) as DWORD;
-			}
-		}
-		{
+            }
+        }
+        {
             let mut set_if = |s: DWORD, b: bool| {
                 // if condition satisfied, add style, otherwise clear style
                 if b { (style |= s) } else { (style &= !s) }
@@ -81,26 +81,26 @@ impl WindowBackend {
             set_if(WS_DLGFRAME, self.border_style != WindowBorderStyle::None);
             set_if(WS_BORDER, self.border_style != WindowBorderStyle::None);
             set_if(WS_THICKFRAME,
-            	self.resizable && self.border_style != WindowBorderStyle::None);
+                self.resizable && self.border_style != WindowBorderStyle::None);
             set_if(WS_MINIMIZEBOX, self.border_style == WindowBorderStyle::Normal);
             //set_if(WS_MAXIMIZEBOX,
-            //	self.border_style == WindowBorderStyle::Normal && self.resizable &&
-            //	content.max_width == 0 && content.max_height == 0);
+            //    self.border_style == WindowBorderStyle::Normal && self.resizable &&
+            //    content.max_width == 0 && content.max_height == 0);
             set_if(WS_SYSMENU, self.border_style != WindowBorderStyle::None);
             if self.border_style == WindowBorderStyle::Tool {
                 ex_style |= WS_EX_TOOLWINDOW;
             } else {
                 ex_style &= !WS_EX_TOOLWINDOW;
             }
-		}
+        }
         (style, ex_style)
-	}
+    }
 
     fn update_window_styles(&self) {
         if !self.is_handle_created() {
             return;
         }
-	    let (mut style, mut ex_style) = self.window_styles();
+        let (mut style, mut ex_style) = self.window_styles();
         unsafe {
             SetWindowLongW(self.handle, GWL_STYLE, style as LONG);
             SetWindowLongW(self.handle, GWL_EXSTYLE, ex_style as LONG);
@@ -109,8 +109,8 @@ impl WindowBackend {
         }
     }
 
-	fn recreate_handle(&mut self) {
-	    REGISTER_WINDOW_CLASS.call_once(|| {
+    fn recreate_handle(&mut self) {
+        REGISTER_WINDOW_CLASS.call_once(|| {
             unsafe {
                 let mut class_name_buf = SmallVec::<[u16; 32]>::new();
                 let wide_class_name = str_to_wide_vec(WINDOW_CLASS_NAME, &mut class_name_buf);
@@ -124,42 +124,44 @@ impl WindowBackend {
 
                 assert!(RegisterClassExW(&wc) != 0);
             }
-	    });
+        });
 
-	    let (style, ex_style) = self.window_styles();
-	    self.delete_handle();
+        let (style, ex_style) = self.window_styles();
+        self.delete_handle();
 
         let mut class_name_buf = SmallVec::<[u16; 32]>::new();
         let wide_class_name = str_to_wide_vec(WINDOW_CLASS_NAME, &mut class_name_buf);
         let mut text_buf = SmallVec::<[u16; 64]>::new();
         let wide_text = str_to_wide_vec(&self.text, &mut text_buf);
-	    unsafe {
-            self.handle = CreateWindowExW(ex_style,
-                                          wide_class_name,
-                                          wide_text,
-                                          style,
-                                          self.location.x as c_int,
-                                          self.location.y as c_int,
-                                          self.size.width as c_int,
-                                          self.size.height as c_int,
-                                          self.owner,
-                                          ptr::null_mut(),
-                                          ptr::null_mut(),
-                                          ptr::null_mut());
+        unsafe {
+            self.handle = CreateWindowExW(
+                ex_style,
+                wide_class_name,
+                wide_text,
+                style,
+                self.location.x as c_int,
+                self.location.y as c_int,
+                self.size.width as c_int,
+                self.size.height as c_int,
+                self.owner,
+                ptr::null_mut(),
+                ptr::null_mut(),
+                ptr::null_mut(),
+            );
             assert!(self.handle != ptr::null_mut());
-	    }
-	}
+        }
+    }
 
-	fn is_handle_created(&self) -> bool {
-	    !self.handle.is_null()
-	}
+    fn is_handle_created(&self) -> bool {
+        !self.handle.is_null()
+    }
 
-	fn handle(&mut self) -> HWND {
-	    if !self.is_handle_created() {
-	        self.recreate_handle();
+    fn handle(&mut self) -> HWND {
+        if !self.is_handle_created() {
+            self.recreate_handle();
         }
         self.handle
-	}
+    }
 }
 
 impl Drop for WindowBackend {
@@ -169,18 +171,18 @@ impl Drop for WindowBackend {
 }
 
 impl GenericWindowBackend for WindowBackend {
-	fn new() -> Self {
-		WindowBackend {
-		    visibility: Visibility::Gone,
-		    handle: ptr::null_mut(),
-		    owner: ptr::null_mut(),
-		    text: "".to_string(),
-		    location: Point2::new(0.0, 0.0),
-		    size: Size2::new(400.0, 300.0),
-		    border_style: WindowBorderStyle::Normal,
+    fn new() -> Self {
+        WindowBackend {
+            visibility: Visibility::Gone,
+            handle: ptr::null_mut(),
+            owner: ptr::null_mut(),
+            text: "".to_string(),
+            location: Point2::new(0.0, 0.0),
+            size: Size2::new(400.0, 300.0),
+            border_style: WindowBorderStyle::Normal,
             resizable: true,
-		}
-	}
+        }
+    }
 
     fn set_text(&mut self, text: &str) {
         self.text = text.to_owned();
@@ -190,7 +192,7 @@ impl GenericWindowBackend for WindowBackend {
                 let wide_text = str_to_wide_vec(text, &mut text_buf);
                 SetWindowTextW(self.handle, wide_text);
             }
-		}
+        }
     }
 
     fn visibility(&self) -> Visibility {
@@ -201,7 +203,7 @@ impl GenericWindowBackend for WindowBackend {
         self.visibility = visibility;
         if self.visibility == Visibility::Visible {
             // TODO: this isn't how I did it in D
-			unsafe { ShowWindow(self.handle(), SW_SHOW); }
+            unsafe { ShowWindow(self.handle(), SW_SHOW); }
         } else {
             if self.is_handle_created() {
                 unsafe { ShowWindow(self.handle, SW_HIDE); }

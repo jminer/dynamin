@@ -5,12 +5,12 @@ use super::super::backend::GenericWindowBackend;
 type HANDLE = uint;
 
 pub struct WindowBackend {
-	tmp: int
+    tmp: int
 }
 
 impl GenericWindowBackend for WindowBackend {
-	fn new() -> WindowBackend {
-		WindowBackend { tmp: 0 }
-	}
+    fn new() -> WindowBackend {
+        WindowBackend { tmp: 0 }
+    }
 }
 

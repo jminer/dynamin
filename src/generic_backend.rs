@@ -7,7 +7,7 @@ use super::Visibility;
 //}
 
 pub trait GenericWindowBackend {
-	fn new() -> Self;
+    fn new() -> Self;
     //fn location(&self) -> Point2<f64>;
     //fn set_location(&mut self, location: &Point2<f64>);
     //fn size(&self) -> Size2<f64>;
