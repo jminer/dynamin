@@ -1,4 +1,8 @@
 
+use std::cell::Cell;
+use std::ops::Deref;
+use std::rc::Rc;
+
 use zaffre::{Point2, Size2};
 
 /// Whether a control is visible or affects layout.
@@ -16,47 +20,68 @@ pub enum Visibility {
 
 pub trait Control {
     fn visibility(&self) -> Visibility;
-    fn set_visibility(&mut self, visibility: Visibility);
+    fn set_visibility(&self, visibility: Visibility);
 
     fn location(&self) -> Point2<f64>;
-    fn set_location(&mut self, location: &Point2<f64>);
+    fn set_location(&self, location: &Point2<f64>);
 
     fn size(&self) -> Size2<f64>;
-    fn set_size(&mut self, size: &Size2<f64>);
+    fn set_size(&self, size: &Size2<f64>);
 
     fn repaint_later(&self);
 }
 
-pub struct SubControl {
-    visibility: Visibility,
-    location: Point2<f64>,
-    size: Size2<f64>,
+pub struct SubControl(Rc<Deref<Target = SubControlData>>);
+
+pub struct SubControlData {
+    visibility: Cell<Visibility>,
+    location: Cell<Point2<f64>>,
+    size: Cell<Size2<f64>>,
+    //children: Cell<Vec<AnySubControl>>,
+    //parent: Cell<Option<Control>>,
+}
+
+impl Deref for SubControlData {
+    type Target = SubControlData;
+    fn deref(&self) -> &SubControlData {
+        &self
+    }
+}
+
+impl SubControl {
+    pub fn new() -> Self {
+        SubControl(Rc::new(SubControlData {
+            visibility: Cell::new(Visibility::Visible),
+            location: Cell::new(Point2::new(0.0, 0.0)),
+            size: Cell::new(Size2::new(50.0, 50.0)),
+        }) as Rc<Deref<Target = SubControlData>>)
+    }
 }
 
 impl Control for SubControl {
     fn visibility(&self) -> Visibility {
-        self.visibility
+        self.0.visibility.get()
     }
 
-    fn set_visibility(&mut self, visibility: Visibility) {
-        self.visibility = visibility;
+    fn set_visibility(&self, visibility: Visibility) {
+        self.0.visibility.set(visibility);
     }
 
     fn location(&self) -> Point2<f64> {
-        self.location
+        self.0.location.get()
     }
 
-    fn set_location(&mut self, location: &Point2<f64>) {
-        self.location = *location;
+    fn set_location(&self, location: &Point2<f64>) {
+        self.0.location.set(*location);
         self.repaint_later();
     }
 
     fn size(&self) -> Size2<f64> {
-        self.size
+        self.0.size.get()
     }
 
-    fn set_size(&mut self, size: &Size2<f64>) {
-        self.size = *size;
+    fn set_size(&self, size: &Size2<f64>) {
+        self.0.size.set(*size);
         self.repaint_later();
     }
 
