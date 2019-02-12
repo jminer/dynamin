@@ -6,6 +6,7 @@ extern crate zaffre;
 pub use self::control::{Control, Visibility};
 pub use self::window::{Window, WindowBorderStyle};
 
+pub mod button;
 pub mod control;
 pub mod window;
 
