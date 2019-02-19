@@ -3,12 +3,14 @@
 extern crate smallvec;
 extern crate zaffre;
 
-pub use self::control::{Control, Visibility};
+pub use self::button::{Button};
+pub use self::control::{Control, set_tab_order, Visibility};
 pub use self::window::{Window, WindowBorderStyle};
 
-pub mod button;
-pub mod control;
-pub mod window;
+mod bitfield;
+mod button;
+mod control;
+mod window;
 
 mod generic_backend;
 
