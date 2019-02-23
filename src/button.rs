@@ -40,8 +40,6 @@ enum ButtonEvent {
     Clicked,
 }
 
-type ButtonEventHandler = FnMut(&mut ButtonEvent);
-
 impl ButtonData {
     pub fn new() -> Self {
         ButtonData {

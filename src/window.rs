@@ -117,7 +117,7 @@ impl Control for WindowData {
 
     fn tab_index(&self) -> u16 { panic!("a window does not have a tab index") }
 
-    fn set_tab_index(&self, tab_index: u16) { panic!("a window does not have a tab index") }
+    fn set_tab_index(&self, _tab_index: u16) { panic!("a window does not have a tab index") }
 
     fn set_size(&self, size: &Size2<f64>) {
     }
