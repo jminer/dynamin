@@ -1,5 +1,5 @@
 
-use std::cell::{Cell, RefCell};
+use std::cell::{RefCell};
 use std::ops::Deref;
 use std::rc::{Weak, Rc};
 
@@ -7,7 +7,7 @@ use zaffre::{Point2, Size2};
 use super::generic_backend::GenericWindowBackend;
 use super::backend::WindowBackend;
 use super::{Control, Visibility};
-use super::control::{ChildrenVec, PrivControl, SubControl};
+use super::control::{ChildrenVec, PrivControl};
 
 // TODO: screenshots of border styles
 /// The style of border around a window.

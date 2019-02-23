@@ -1,8 +1,7 @@
 
-use std::cell::{Cell, Ref, RefCell};
+use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
-use std::slice::Iter;
 
 use zaffre::{Point2, Size2};
 
