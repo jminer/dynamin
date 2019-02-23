@@ -6,6 +6,7 @@ authors = ["Jordan Miner <jminer7@gmail.com>"]
 description = "Dynamin is a GUI library."
 keywords = ["gui"]
 license = "MPL-2.0"
+edition = "2018"
 
 [dependencies]
 #event-loop = "*"

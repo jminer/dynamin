@@ -5,8 +5,8 @@ use std::rc::{Rc, Weak};
 
 use zaffre::{Point2, Size2};
 
-use bitfield::BitField;
-use event_vec::EventHandlerVec;
+use crate::bitfield::BitField;
+use crate::event_vec::EventHandlerVec;
 
 /// Whether a control is visible or affects layout.
 #[derive(Copy, Clone, Eq, PartialEq)]

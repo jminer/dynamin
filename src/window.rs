@@ -4,11 +4,11 @@ use std::ops::Deref;
 use std::rc::{Weak, Rc};
 
 use zaffre::{Point2, Size2};
-use super::generic_backend::GenericWindowBackend;
-use super::backend::WindowBackend;
-use super::{Control, Visibility};
-use super::control::{ChildrenVec, PrivControl};
-use super::event_vec::EventHandlerVec;
+
+use crate::generic_backend::GenericWindowBackend;
+use crate::backend::WindowBackend;
+use crate::{ChildrenVec, Control, EventHandlerVec, Visibility};
+use crate::control::PrivControl;
 
 // TODO: screenshots of border styles
 /// The style of border around a window.

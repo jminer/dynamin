@@ -2,7 +2,7 @@
 use std::ops::Deref;
 use std::rc::Rc;
 
-use control::{Control, SubControl, SubControlData, SubControlRef, SubControlEvent};
+use crate::control::{Control, SubControl, SubControlData, SubControlRef, SubControlEvent};
 
 #[derive(Clone)]
 pub struct Button(Rc<ButtonData>);

@@ -3,7 +3,7 @@ use std::rc::Weak;
 
 use zaffre::{Point2, Size2};
 
-use window::WindowData;
+use crate::window::WindowData;
 use super::Visibility;
 
 //pub trait GenericCursorBackend {

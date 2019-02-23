@@ -11,9 +11,9 @@ use std::os::windows::ffi::OsStrExt;
 use std::rc::{Rc, Weak};
 use std::sync::{Once, ONCE_INIT};
 
-use generic_backend::GenericWindowBackend;
-use window::{WindowData, WindowEvent};
-use super::super::{Visibility, WindowBorderStyle};
+use crate::{Visibility, WindowBorderStyle};
+use crate::generic_backend::GenericWindowBackend;
+use crate::{WindowData, WindowEvent};
 
 use smallvec::SmallVec;
 use zaffre::{Point2, Size2};
