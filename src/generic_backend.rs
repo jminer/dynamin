@@ -1,5 +1,9 @@
 
+use std::rc::Weak;
+
 use zaffre::{Point2, Size2};
+
+use window::WindowData;
 use super::Visibility;
 
 //pub trait GenericCursorBackend {
@@ -8,6 +12,9 @@ use super::Visibility;
 
 pub trait GenericWindowBackend {
     fn new() -> Self;
+
+    fn set_window(&self, window: Weak<WindowData>);
+
     //fn location(&self) -> Point2<f64>;
     //fn set_location(&mut self, location: &Point2<f64>);
     //fn size(&self) -> Size2<f64>;

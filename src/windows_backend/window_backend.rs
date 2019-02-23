@@ -1,15 +1,18 @@
 
 extern crate winapi;
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
 use std::ptr;
 use std::ffi::OsStr;
 use std::mem;
 use std::os::raw::c_int;
 use std::os::windows::ffi::OsStrExt;
+use std::rc::{Rc, Weak};
 use std::sync::{Once, ONCE_INIT};
 
 use generic_backend::GenericWindowBackend;
+use window::{WindowData, WindowEvent};
 use super::super::{Visibility, WindowBorderStyle};
 
 use smallvec::SmallVec;
@@ -32,6 +35,7 @@ const WINDOW_CLASS_NAME: &'static str = "DynaminWindowRust";
 static REGISTER_WINDOW_CLASS: Once = ONCE_INIT;
 
 pub struct WindowBackend {
+    window: Cell<Option<Weak<WindowData>>>,
     visibility: Cell<Visibility>,
     handle: Cell<HWND>,
     owner: Cell<HWND>,
@@ -54,15 +58,40 @@ impl ToWide for str {
     }
 }
 
+// I considered using SetWindowLongPtr() to store window handles, but a HashMap is far faster
+// than a system call.
+thread_local! {
+    static WINDOWS: RefCell<HashMap<HWND, Weak<WindowData>>> = RefCell::new(HashMap::new());
+}
+
+fn get_window(hwnd: HWND) -> Rc<WindowData> {
+    // The Rust side object should exist as long as the native window because when the Rust object
+    // is dropped, it destroys the native window. Thus, the unwrap() should be safe.
+    WINDOWS.with(|windows| windows.borrow()[&hwnd].upgrade()).unwrap()
+}
+
 #[allow(non_snake_case)]
 unsafe extern "system"
 fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT {
-    DefWindowProcW(hwnd, uMsg, wParam, lParam)
+    match uMsg {
+        WM_CLOSE => {
+            let window = get_window(hwnd);
+            let mut event = WindowEvent::Closing;
+            window.send_event(&mut event);
+            // TODO: get handle to window and send Closing event
+            0
+        }
+        _ => DefWindowProcW(hwnd, uMsg, wParam, lParam)
+    }
 }
 
 impl WindowBackend {
     fn delete_handle(&self) {
         if !self.handle.get().is_null() {
+            WINDOWS.with(|windows| {
+                let mut windows = windows.borrow_mut();
+                windows.remove(&self.handle.get());
+            });
             unsafe { DestroyWindow(self.handle.get()); }
             self.handle.set(ptr::null_mut());
         }
@@ -154,6 +183,12 @@ impl WindowBackend {
                 ptr::null_mut(),
             ));
             assert!(self.handle.get() != ptr::null_mut());
+            WINDOWS.with(|windows| {
+                let mut windows = windows.borrow_mut();
+                let window = self.window.take();
+                windows.insert(self.handle.get(), window.clone().unwrap());
+                self.window.set(window);
+            });
         }
     }
 
@@ -178,6 +213,7 @@ impl Drop for WindowBackend {
 impl GenericWindowBackend for WindowBackend {
     fn new() -> Self {
         WindowBackend {
+            window: Cell::new(None),
             visibility: Cell::new(Visibility::Gone),
             handle: Cell::new(ptr::null_mut()),
             owner: Cell::new(ptr::null_mut()),
@@ -187,6 +223,10 @@ impl GenericWindowBackend for WindowBackend {
             border_style: Cell::new(WindowBorderStyle::Normal),
             resizable: Cell::new(true),
         }
+    }
+
+    fn set_window(&self, window: Weak<WindowData>) {
+        self.window.set(Some(window));
     }
 
     fn set_text(&self, text: &str) {

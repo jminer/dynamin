@@ -1,3 +1,5 @@
+
+#![feature(trait_alias)]
 #[allow(dead_code)]
 
 extern crate smallvec;
@@ -5,7 +7,7 @@ extern crate zaffre;
 
 pub use self::button::{Button};
 pub use self::control::{Control, set_tab_order, Visibility};
-pub use self::window::{Window, WindowBorderStyle};
+pub use self::window::{Window, WindowBorderStyle, WindowEvent};
 
 mod bitfield;
 mod button;
