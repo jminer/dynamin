@@ -12,6 +12,7 @@ pub use self::window::{Window, WindowBorderStyle, WindowEvent};
 mod bitfield;
 mod button;
 mod control;
+mod event_vec;
 mod window;
 
 mod generic_backend;

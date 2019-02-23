@@ -77,7 +77,7 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
         WM_CLOSE => {
             let window = get_window(hwnd);
             let mut event = WindowEvent::Closing;
-            window.send_event(&mut event);
+            window.event_handlers().send(&mut event);
             // TODO: get handle to window and send Closing event
             0
         }

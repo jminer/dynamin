@@ -6,6 +6,7 @@ use std::rc::{Rc, Weak};
 use zaffre::{Point2, Size2};
 
 use bitfield::BitField;
+use event_vec::EventHandlerVec;
 
 /// Whether a control is visible or affects layout.
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -132,7 +133,7 @@ pub struct SubControlData {
     size: Cell<Size2<f64>>,
     children: RefCell<ChildrenVec>,
     parent: Cell<Option<Weak<Control>>>,
-    event_handlers: Cell<Vec<Box<SubControlEventHandler>>>,
+    event_handlers: EventHandlerVec<SubControlEvent>,
     //draw_commands: Cell<Vec<DrawCommand>>,
     tab_index: Cell<u16>,
     bit_fields: Cell<u8>,
@@ -149,8 +150,6 @@ pub enum SubControlEvent {
     KeyDown,
     KeyUp,
 }
-
-type SubControlEventHandler = FnMut(&mut SubControlEvent);
 
 const FOCUSABLE_POS: u8 = 0;
 const FOCUSED_POS: u8 = 1;
@@ -263,7 +262,7 @@ impl SubControlData {
             size: Cell::new(Size2::new(50.0, 50.0)),
             children: RefCell::new(ChildrenVec::new()),
             parent: Cell::new(None),
-            event_handlers: Cell::new(vec![]),
+            event_handlers: EventHandlerVec::new(),
             tab_index: Cell::new(0),
             bit_fields: Cell::new(
                 0.set_bits(
@@ -273,6 +272,10 @@ impl SubControlData {
                 .set_bit(ENABLED_POS, true),
             ),
         }
+    }
+
+    pub fn event_handlers(&self) -> &EventHandlerVec<SubControlEvent> {
+        &self.event_handlers
     }
 
     pub fn focusable(&self) -> bool {

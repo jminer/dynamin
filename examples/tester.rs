@@ -11,8 +11,13 @@ fn main() {
     let mut win = Window::new();
     win.set_text("Dynamin Tester");
     win.set_visibility(Visibility::Visible);
-    win.add_event_handler(|event| {
-        println!("closing");
+    win.event_handlers().add(|event| {
+        match event {
+            WindowEvent::Closing => {
+                println!("closing");
+                std::process::exit(0);
+            }
+        }
     });
 
     let b = Button::new();
