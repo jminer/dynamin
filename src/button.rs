@@ -35,8 +35,8 @@ impl SubControlRef for ButtonData {
     fn sub_control_ref(&self) -> &SubControlData { &self.sub_control }
 }
 
-enum ButtonEvent {
-    SubControl(SubControlEvent),
+#[non_exhaustive]
+pub enum ButtonEvent {
     Clicked,
 }
 

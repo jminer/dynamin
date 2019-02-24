@@ -1,4 +1,5 @@
 
+use std::any::Any;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -9,11 +10,11 @@ use std::rc::Rc;
 // the vector because you can have multiple immutable references), and for write access in
 // add/remove_handler, `make_mut` is used.
 
-pub struct EventHandlerVec<T>(RefCell<Rc<Vec<Rc<RefCell<EventHandler<T>>>>>>);
+pub struct EventHandlerVec(RefCell<Rc<Vec<Rc<RefCell<EventHandler>>>>>);
 
-pub trait EventHandler<T> = for<'a> FnMut(&'a mut T);
+pub trait EventHandler = for<'a> FnMut(&'a mut Any);
 
-impl<T> EventHandlerVec<T> {
+impl EventHandlerVec {
     pub fn new() -> Self {
         Self(Default::default())
     }
@@ -21,23 +22,23 @@ impl<T> EventHandlerVec<T> {
     pub fn add<F>(&self, handler: F)
     where
         // I can't use EventHandler<T> here because the for<'a> doesn't work then.
-        F: for<'a> FnMut(&'a mut T) + 'static,
+        F: for<'a> FnMut(&'a mut Any) + 'static,
     {
         let mut event_handlers_rc = self.0.borrow_mut();
         let event_handlers = Rc::make_mut(&mut event_handlers_rc);
         event_handlers.push(Rc::new(RefCell::new(handler)));
     }
 
-    pub fn send(&self, event: &mut T) {
+    pub fn send(&self, event: &mut Any) {
         let event_handlers = self.0.borrow().clone();
         for handler in event_handlers.iter() {
-            let handler: &mut EventHandler<T> = &mut *handler.borrow_mut();
+            let handler: &mut EventHandler = &mut *handler.borrow_mut();
             handler(event);
         }
     }
 }
 
-impl<T> Default for EventHandlerVec<T> {
+impl Default for EventHandlerVec {
     fn default() -> Self {
         EventHandlerVec::new()
     }

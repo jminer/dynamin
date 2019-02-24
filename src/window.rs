@@ -39,9 +39,10 @@ impl Deref for Window {
 pub struct WindowData<B: GenericWindowBackend = WindowBackend> {
     backend: B,
     children: RefCell<ChildrenVec>,
-    event_handlers: EventHandlerVec<WindowEvent>,
+    event_handlers: EventHandlerVec,
 }
 
+#[non_exhaustive]
 pub enum WindowEvent {
     // Triggered when the user clicks the close button on the window.
     Closing,
@@ -80,7 +81,7 @@ impl<B: GenericWindowBackend> WindowData<B> {
         self.backend.set_resizable(resizable);
     }
 
-    pub fn event_handlers(&self) -> &EventHandlerVec<WindowEvent> {
+    pub fn event_handlers(&self) -> &EventHandlerVec {
         &self.event_handlers
     }
 }

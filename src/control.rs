@@ -133,12 +133,13 @@ pub struct SubControlData {
     size: Cell<Size2<f64>>,
     children: RefCell<ChildrenVec>,
     parent: Cell<Option<Weak<Control>>>,
-    event_handlers: EventHandlerVec<SubControlEvent>,
+    event_handlers: EventHandlerVec,
     //draw_commands: Cell<Vec<DrawCommand>>,
     tab_index: Cell<u16>,
     bit_fields: Cell<u8>,
 }
 
+#[non_exhaustive]
 pub enum SubControlEvent {
     Moved,
     Resized,
@@ -274,7 +275,7 @@ impl SubControlData {
         }
     }
 
-    pub fn event_handlers(&self) -> &EventHandlerVec<SubControlEvent> {
+    pub fn event_handlers(&self) -> &EventHandlerVec {
         &self.event_handlers
     }
 

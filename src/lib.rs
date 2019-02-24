@@ -1,5 +1,7 @@
 
+#![feature(non_exhaustive)]
 #![feature(trait_alias)]
+
 #[allow(dead_code)]
 
 pub use button::{Button};
