@@ -1,4 +1,5 @@
 
+use std::any::Any;
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -44,6 +45,20 @@ impl ButtonData {
     pub fn new() -> Self {
         ButtonData {
             sub_control: SubControlData::new(),
+        }
+    }
+
+    fn on_event(&self, event: &mut Any) {
+        match event.downcast_mut::<SubControlEvent>() {
+            Some(SubControlEvent::MouseDown) => {
+            }
+            Some(SubControlEvent::MouseUp) => {
+                let mut clicked_event = ButtonEvent::Clicked;
+                self.sub_control.event_handlers().send(&mut clicked_event);
+            }
+            Some(SubControlEvent::MouseMoved) => {
+            }
+            _ => {}
         }
     }
 }

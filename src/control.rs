@@ -128,6 +128,7 @@ impl From<SubControl> for Rc<Control> {
 }
 
 
+// TODO: I currently think BaseControl is a better name than SubControl.
 pub struct SubControlData {
     location: Cell<Point2<f64>>,
     size: Cell<Size2<f64>>,

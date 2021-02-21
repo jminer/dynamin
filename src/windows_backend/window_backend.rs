@@ -81,6 +81,9 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
             // TODO: get handle to window and send Closing event
             0
         }
+        WM_PAINT => {
+            0
+        }
         _ => DefWindowProcW(hwnd, uMsg, wParam, lParam)
     }
 }
