@@ -47,7 +47,7 @@ fn u8_to_visibility(v: u8) -> Visibility {
 
 // Use a separate trait that isn't reexported to hide methods.
 pub trait PrivControl {
-    fn set_parent(&self, parent: Weak<Control>);
+    fn set_parent(&self, parent: Weak<dyn Control>);
 }
 
 pub trait Control : PrivControl {
@@ -69,8 +69,8 @@ pub trait Control : PrivControl {
 }
 
 pub struct ChildrenVec {
-    pub(crate) control: Option<Weak<Control>>,
-    vec: Vec<Rc<Control>>,
+    pub(crate) control: Option<Weak<dyn Control>>,
+    vec: Vec<Rc<dyn Control>>,
 }
 
 impl ChildrenVec {
@@ -86,7 +86,7 @@ impl ChildrenVec {
         self.update_control();
     }
 
-    pub fn push<T>(&mut self, control: T) where T: Into<Rc<Control>> {
+    pub fn push<T>(&mut self, control: T) where T: Into<Rc<dyn Control>> {
         let control = control.into();
         control.set_parent(Rc::downgrade(&control));
         self.vec.push(control);
@@ -99,8 +99,8 @@ impl ChildrenVec {
 }
 
 impl Deref for ChildrenVec {
-    type Target = [Rc<Control>];
-    fn deref(&self) -> &[Rc<Control>] {
+    type Target = [Rc<dyn Control>];
+    fn deref(&self) -> &[Rc<dyn Control>] {
         &self.vec
     }
 }
@@ -113,7 +113,7 @@ impl SubControl {
         SubControl(Rc::new(SubControlData::new()))
     }
 
-    pub fn register_handle<T>(handle: T) -> T where T: Into<Rc<Control>> + Clone {
+    pub fn register_handle<T>(handle: T) -> T where T: Into<Rc<dyn Control>> + Clone {
         let control = &handle.clone().into();
         control.children().borrow_mut().control = Some(Rc::downgrade(control));
         handle
@@ -127,9 +127,9 @@ impl Deref for SubControl {
     }
 }
 
-impl From<SubControl> for Rc<Control> {
+impl From<SubControl> for Rc<dyn Control> {
     fn from(self_: SubControl) -> Self {
-        self_.0 as Rc<Control>
+        self_.0 as Rc<dyn Control>
     }
 }
 
@@ -139,7 +139,7 @@ pub struct SubControlData {
     location: Cell<Point2<f64>>,
     size: Cell<Size2<f64>>,
     children: RefCell<ChildrenVec>,
-    parent: Cell<Option<Weak<Control>>>,
+    parent: Cell<Option<Weak<dyn Control>>>,
     event_handlers: EventHandlerVec,
     //draw_commands: Cell<Vec<DrawCommand>>,
     tab_index: Cell<u16>,
@@ -167,7 +167,7 @@ const ELASTIC_X_POS: u8 = 5;
 const ELASTIC_Y_POS: u8 = 6;
 
 impl PrivControl for SubControlData {
-    fn set_parent(&self, parent: Weak<Control>) {
+    fn set_parent(&self, parent: Weak<dyn Control>) {
         self.parent.set(Some(parent));
     }
 }
@@ -220,7 +220,7 @@ pub trait SubControlRef {
 }
 
 impl<T> PrivControl for T where T: SubControlRef {
-    fn set_parent(&self, parent: Weak<Control>) {
+    fn set_parent(&self, parent: Weak<dyn Control>) {
         self.sub_control_ref().set_parent(parent)
     }
 }
@@ -298,7 +298,7 @@ impl SubControlData {
 
 pub fn set_tab_order<'a, I>(start_index: u16, controls: I)
 where
-    I: Iterator<Item = &'a Rc<Control>>, // TODO: I'm not sure what the `Item` type should be
+    I: Iterator<Item = &'a Rc<dyn Control>>, // TODO: I'm not sure what the `Item` type should be
 {
     let mut index = start_index;
     for c in controls {

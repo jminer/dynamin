@@ -16,9 +16,9 @@ use std::rc::Rc;
 // the vector because you can have multiple immutable references), and for write access in
 // add/remove_handler, `make_mut` is used.
 
-pub struct EventHandlerVec(RefCell<Rc<Vec<Rc<RefCell<EventHandler>>>>>);
+pub struct EventHandlerVec(RefCell<Rc<Vec<Rc<RefCell<dyn EventHandler>>>>>);
 
-pub trait EventHandler = for<'a> FnMut(&'a mut Any);
+pub trait EventHandler = for<'a> FnMut(&'a mut dyn Any);
 
 impl EventHandlerVec {
     pub fn new() -> Self {
@@ -28,17 +28,17 @@ impl EventHandlerVec {
     pub fn add<F>(&self, handler: F)
     where
         // I can't use EventHandler<T> here because the for<'a> doesn't work then.
-        F: for<'a> FnMut(&'a mut Any) + 'static,
+        F: for<'a> FnMut(&'a mut dyn Any) + 'static,
     {
         let mut event_handlers_rc = self.0.borrow_mut();
         let event_handlers = Rc::make_mut(&mut event_handlers_rc);
         event_handlers.push(Rc::new(RefCell::new(handler)));
     }
 
-    pub fn send(&self, event: &mut Any) {
+    pub fn send(&self, event: &mut dyn Any) {
         let event_handlers = self.0.borrow().clone();
         for handler in event_handlers.iter() {
-            let handler: &mut EventHandler = &mut *handler.borrow_mut();
+            let handler: &mut dyn EventHandler = &mut *handler.borrow_mut();
             handler(event);
         }
     }

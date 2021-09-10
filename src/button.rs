@@ -27,9 +27,9 @@ impl Deref for Button {
     }
 }
 
-impl From<Button> for Rc<Control> {
+impl From<Button> for Rc<dyn Control> {
     fn from(self_: Button) -> Self {
-        self_.0 as Rc<Control>
+        self_.0 as Rc<dyn Control>
     }
 }
 
@@ -54,7 +54,7 @@ impl ButtonData {
         }
     }
 
-    fn on_event(&self, event: &mut Any) {
+    fn on_event(&self, event: &mut dyn Any) {
         match event.downcast_mut::<SubControlEvent>() {
             Some(SubControlEvent::MouseDown) => {
             }

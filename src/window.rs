@@ -62,14 +62,14 @@ impl Window {
             event_handlers: EventHandlerVec::new(),
         }));
         handle.0.backend.set_window(Rc::downgrade(&handle.0));
-        let control_handle = handle.0.clone() as Rc<Control>;
+        let control_handle = handle.0.clone() as Rc<dyn Control>;
         control_handle.children().borrow_mut().control = Some(Rc::downgrade(&control_handle));
         handle
     }
 }
 
 impl<B: GenericWindowBackend> WindowData<B> {
-    pub fn set_child(&self, child: Rc<Control>) {
+    pub fn set_child(&self, child: Rc<dyn Control>) {
         let mut children = self.children.borrow_mut();
         children.clear();
         children.push(child);
@@ -93,7 +93,7 @@ impl<B: GenericWindowBackend> WindowData<B> {
 }
 
 impl PrivControl for WindowData {
-    fn set_parent(&self, _parent: Weak<Control>) {
+    fn set_parent(&self, _parent: Weak<dyn Control>) {
         panic!("a window does not have a parent")
     }
 }
