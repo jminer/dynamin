@@ -133,6 +133,10 @@ impl Control for WindowData {
         &self.children
     }
 
+    fn event_handlers(&self) -> &EventHandlerVec {
+        &self.event_handlers
+    }
+
     fn repaint_later(&self) {
     }
 }

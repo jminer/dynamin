@@ -10,6 +10,7 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use crate::control::{Control, SubControl, SubControlData, SubControlRef, SubControlEvent};
+use crate::event_vec::EventHandler;
 
 // TODO: generate with a proc macro
 // start proc macro generated
@@ -19,6 +20,12 @@ pub struct Button(Rc<ButtonData>);
 impl Button {
     pub fn new() -> Self {
         SubControl::register_handle(Button(Rc::new(ButtonData::new())))
+    }
+}
+
+impl Default for Button {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -35,9 +42,9 @@ impl From<Button> for Rc<dyn Control> {
     }
 }
 
-impl Default for Button {
-    fn default() -> Self {
-        Self::new()
+impl From<Button> for Rc<dyn EventHandler> {
+    fn from(self_: Button) -> Self {
+        self_.0 as Rc<dyn EventHandler>
     }
 }
 // end proc macro generated
@@ -57,13 +64,7 @@ pub enum ButtonEvent {
     Clicked,
 }
 
-impl ButtonData {
-    pub fn new() -> Self {
-        ButtonData {
-            sub_control: SubControlData::new(),
-        }
-    }
-
+impl EventHandler for ButtonData {
     fn on_event(&self, event: &mut dyn Any) {
         match event.downcast_mut::<SubControlEvent>() {
             Some(SubControlEvent::MouseDown) => {
@@ -75,6 +76,14 @@ impl ButtonData {
             Some(SubControlEvent::MouseMoved) => {
             }
             _ => {}
+        }
+    }
+}
+
+impl ButtonData {
+    pub fn new() -> Self {
+        ButtonData {
+            sub_control: SubControlData::new(),
         }
     }
 }

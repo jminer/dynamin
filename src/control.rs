@@ -12,7 +12,7 @@ use std::rc::{Rc, Weak};
 use zaffre::{Point2, Size2};
 
 use crate::bitfield::BitField;
-use crate::event_vec::EventHandlerVec;
+use crate::event_vec::{EventHandler, EventHandlerVec};
 
 /// Whether a control is visible or affects layout.
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -65,6 +65,8 @@ pub trait Control : PrivControl {
 
     fn children(&self) -> &RefCell<ChildrenVec>;
 
+    fn event_handlers(&self) -> &EventHandlerVec;
+
     fn repaint_later(&self);
 }
 
@@ -114,9 +116,16 @@ impl SubControl {
         SubControl(Rc::new(SubControlData::new()))
     }
 
-    pub fn register_handle<T>(handle: T) -> T where T: Into<Rc<dyn Control>> + Clone {
-        let control = &handle.clone().into();
+    pub fn register_handle<T>(handle: T) -> T
+    where
+        T: Into<Rc<dyn Control>> + Into<Rc<dyn EventHandler>> + Clone,
+    {
+        let control: &Rc<dyn Control> = &handle.clone().into();
         control.children().borrow_mut().control = Some(Rc::downgrade(control));
+
+        let ev_handler: Rc<dyn EventHandler> = handle.clone().into();
+        control.event_handlers().add(move |event| { ev_handler.on_event(event) });
+
         handle
     }
 }
@@ -212,6 +221,10 @@ impl Control for SubControlData {
         &self.children
     }
 
+    fn event_handlers(&self) -> &EventHandlerVec {
+        &self.event_handlers
+    }
+
     fn repaint_later(&self) {
     }
 }
@@ -257,6 +270,10 @@ impl<T> Control for T where T: SubControlRef {
 
     fn children(&self) -> &RefCell<ChildrenVec> {
         self.sub_control_ref().children()
+    }
+
+    fn event_handlers(&self) -> &EventHandlerVec {
+        self.sub_control_ref().event_handlers()
     }
 
     fn repaint_later(&self) {
