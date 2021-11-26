@@ -88,7 +88,8 @@ impl ChildrenVec {
 
     pub fn push<T>(&mut self, control: T) where T: Into<Rc<dyn Control>> {
         let control = control.into();
-        control.set_parent(Rc::downgrade(&control));
+        control.set_parent(self.control.clone()
+            .expect("ChildrenVec control not set; need to call register_handle()"));
         self.vec.push(control);
         self.update_control();
     }
