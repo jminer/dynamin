@@ -11,6 +11,8 @@ use std::rc::Rc;
 
 use crate::control::{Control, SubControl, SubControlData, SubControlRef, SubControlEvent};
 
+// TODO: generate with a proc macro
+// start proc macro generated
 #[derive(Clone)]
 pub struct Button(Rc<ButtonData>);
 
@@ -33,7 +35,15 @@ impl From<Button> for Rc<dyn Control> {
     }
 }
 
+impl Default for Button {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+// end proc macro generated
 
+
+//#[dynamin::control]
 pub struct ButtonData {
     sub_control: SubControlData,
 }

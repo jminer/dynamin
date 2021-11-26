@@ -296,6 +296,12 @@ impl SubControlData {
     }
 }
 
+impl Default for SubControlData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 
 pub fn set_tab_order<'a, I>(start_index: u16, controls: I)
 where
