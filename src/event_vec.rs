@@ -37,7 +37,7 @@ impl EventHandlerVec {
 
     pub fn send(&self, event: &mut dyn Any) {
         let event_handlers = self.0.borrow().clone();
-        for handler in event_handlers.iter() {
+        for handler in event_handlers.iter().rev() {
             let handler: &mut dyn EventHandlerFn = &mut *handler.borrow_mut();
             handler(event);
         }
