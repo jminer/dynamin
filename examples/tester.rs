@@ -17,8 +17,8 @@ fn main() {
     let mut win = Window::new();
     win.set_text("Dynamin Tester");
     win.set_visibility(Visibility::Visible);
-    win.event_handlers().add(|event| {
-        match event.downcast_mut::<WindowEvent>() {
+    win.event_handlers().add(|route| {
+        match route.event.downcast_mut::<WindowEvent>() {
             Some(WindowEvent::Closing) => {
                 println!("closing");
                 std::process::exit(0);

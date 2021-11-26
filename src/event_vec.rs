@@ -18,7 +18,13 @@ use std::rc::Rc;
 
 pub struct EventHandlerVec(RefCell<Rc<Vec<Rc<RefCell<dyn EventHandlerFn>>>>>);
 
-pub trait EventHandlerFn = for<'a> FnMut(&'a mut dyn Any);
+pub trait EventHandlerFn = for<'a> FnMut(&'a mut EventRoute);
+
+#[non_exhaustive]
+pub struct EventRoute<'a> {
+    pub event: &'a mut dyn Any,
+    pub handled: bool,
+}
 
 impl EventHandlerVec {
     pub fn new() -> Self {
@@ -28,7 +34,7 @@ impl EventHandlerVec {
     pub fn add<F>(&self, handler: F)
     where
         // I can't use EventHandler<T> here because the for<'a> doesn't work then.
-        F: for<'a> FnMut(&'a mut dyn Any) + 'static,
+        F: for<'a> FnMut(&'a mut EventRoute) + 'static,
     {
         let mut event_handlers_rc = self.0.borrow_mut();
         let event_handlers = Rc::make_mut(&mut event_handlers_rc);
@@ -37,9 +43,15 @@ impl EventHandlerVec {
 
     pub fn send(&self, event: &mut dyn Any) {
         let event_handlers = self.0.borrow().clone();
+        let mut route = EventRoute { event, handled: false };
+        // Call more recently added handlers first so that they can override the behavior of those
+        // added earlier.
         for handler in event_handlers.iter().rev() {
-            let handler: &mut dyn EventHandlerFn = &mut *handler.borrow_mut();
-            handler(event);
+            let handler: &mut dyn FnMut(&mut EventRoute) = &mut *handler.borrow_mut();
+            handler(&mut route);
+            if route.handled {
+                break;
+            }
         }
     }
 }
@@ -51,5 +63,5 @@ impl Default for EventHandlerVec {
 }
 
 pub trait EventHandler {
-    fn on_event(&self, event: &mut dyn Any);
+    fn on_event(&self, route: &mut EventRoute);
 }

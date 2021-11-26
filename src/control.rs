@@ -124,7 +124,7 @@ impl SubControl {
         control.children().borrow_mut().control = Some(Rc::downgrade(control));
 
         let ev_handler: Rc<dyn EventHandler> = handle.clone().into();
-        control.event_handlers().add(move |event| { ev_handler.on_event(event) });
+        control.event_handlers().add(move |route| { ev_handler.on_event(route) });
 
         handle
     }
@@ -156,6 +156,7 @@ pub struct SubControlData {
     bit_fields: Cell<u8>,
 }
 
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum SubControlEvent {
     Moved,

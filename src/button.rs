@@ -10,7 +10,7 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use crate::control::{Control, SubControl, SubControlData, SubControlRef, SubControlEvent};
-use crate::event_vec::EventHandler;
+use crate::event_vec::{EventRoute, EventHandler};
 
 // TODO: generate with a proc macro
 // start proc macro generated
@@ -59,14 +59,15 @@ impl SubControlRef for ButtonData {
     fn sub_control_ref(&self) -> &SubControlData { &self.sub_control }
 }
 
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum ButtonEvent {
     Clicked,
 }
 
 impl EventHandler for ButtonData {
-    fn on_event(&self, event: &mut dyn Any) {
-        match event.downcast_mut::<SubControlEvent>() {
+    fn on_event(&self, route: &mut EventRoute) {
+        match route.event.downcast_mut::<SubControlEvent>() {
             Some(SubControlEvent::MouseDown) => {
             }
             Some(SubControlEvent::MouseUp) => {
