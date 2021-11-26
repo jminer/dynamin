@@ -14,6 +14,7 @@ pub use button::{Button};
 pub use control::{ChildrenVec, Control, set_tab_order, Visibility};
 pub use event_vec::EventHandlerVec;
 pub use window::{Window, WindowData, WindowBorderStyle, WindowEvent};
+use zaffre::RenderingBackend;
 
 mod bitfield;
 mod button;
@@ -30,3 +31,6 @@ pub mod backend;
 #[path = "gtk_backend/mod.rs"]
 pub mod backend;
 
+pub fn set_rendering_preference(pref: RenderingBackend) {
+
+}

@@ -22,7 +22,8 @@ use crate::generic_backend::GenericWindowBackend;
 use crate::{WindowData, WindowEvent};
 
 use smallvec::SmallVec;
-use zaffre::{Point2, Size2};
+use zaffre::{Brush, Color, PainterExt, PathBuf, Point2, RenderingBackend, Size2, StrokeStyle, SwapchainSurface};
+use zaffre::AsPathIter;
 use self::winapi::shared::{
     minwindef::*,
     ntdef::*,
@@ -45,6 +46,7 @@ pub struct WindowBackend {
     visibility: Cell<Visibility>,
     handle: Cell<HWND>,
     owner: Cell<HWND>,
+    surface: Cell<Option<SwapchainSurface>>,
     text: Cell<String>,
     location: Cell<Point2<f64>>,
     size: Cell<Size2<f64>>,
@@ -88,6 +90,30 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
             0
         }
         WM_PAINT => {
+            let mut ps: PAINTSTRUCT = mem::zeroed();
+            BeginPaint(hwnd, &mut ps);
+
+            let window = get_window(hwnd);
+            let backend = &window.backend;
+            let mut surface = backend.surface.take().unwrap();
+
+            let mut painter = surface.start_painting(ps.hdc);
+
+            let mut path = PathBuf::new();
+            path.move_to(Point2::new(5.0f32, 5.0f32));
+            path.line_to(Point2::new(60.0f32, 25.0f32));
+            painter.stroke_path(&mut path.path_iter(),
+                &Brush::Solid(Color::from_rgba(0, 0, 255, 255)),
+                &StrokeStyle::with_width(3.0f32));
+            // painter.stroke(&path.as_path(),
+            //     &Brush::Solid(Color::from_rgba(0, 0, 255, 128)),
+            //     &StrokeStyle::with_width(2.0f32));
+
+            drop(painter);
+            surface.end_painting(ps.hdc);
+            backend.surface.set(Some(surface));
+
+            EndPaint(hwnd, &mut ps);
             0
         }
         _ => DefWindowProcW(hwnd, uMsg, wParam, lParam)
@@ -198,6 +224,10 @@ impl WindowBackend {
                 windows.insert(self.handle.get(), window.clone().unwrap());
                 self.window.set(window);
             });
+
+            self.surface.set(Some(
+                SwapchainSurface::from_hwnd(self.handle.get(), RenderingBackend::Gpu)
+            ));
         }
     }
 
@@ -226,6 +256,7 @@ impl GenericWindowBackend for WindowBackend {
             visibility: Cell::new(Visibility::Gone),
             handle: Cell::new(ptr::null_mut()),
             owner: Cell::new(ptr::null_mut()),
+            surface: Cell::new(None),
             text: Cell::new("".to_string()),
             location: Cell::new(Point2::new(0.0, 0.0)),
             size: Cell::new(Size2::new(400.0, 300.0)),

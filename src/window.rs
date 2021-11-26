@@ -43,7 +43,7 @@ impl Deref for Window {
 
 // Can't implement `Clone` without cloning the native handle.
 pub struct WindowData<B: GenericWindowBackend = WindowBackend> {
-    backend: B,
+    pub(crate) backend: B,
     children: RefCell<ChildrenVec>,
     event_handlers: EventHandlerVec,
 }
