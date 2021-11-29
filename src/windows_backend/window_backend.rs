@@ -102,6 +102,7 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
             let mut path = PathBuf::new();
             path.move_to(Point2::new(5.0f32, 5.0f32));
             path.line_to(Point2::new(60.0f32, 25.0f32));
+            painter.clear(Color::from_rgba(200, 200, 200, 255));
             painter.stroke_path(&mut path.path_iter(),
                 &Brush::Solid(Color::from_rgba(0, 0, 255, 255)),
                 &StrokeStyle::with_width(3.0f32));
