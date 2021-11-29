@@ -9,6 +9,7 @@ use std::rc::Weak;
 
 use zaffre::{Point2, Size2};
 
+use crate::Window;
 use crate::window::WindowData;
 use super::Visibility;
 
@@ -20,6 +21,8 @@ pub trait GenericWindowBackend {
     fn new() -> Self;
 
     fn set_window(&self, window: Weak<WindowData>);
+
+    fn window(&self) -> Window;
 
     //fn location(&self) -> Point2<f64>;
     //fn set_location(&mut self, location: &Point2<f64>);

@@ -32,7 +32,7 @@ pub enum WindowBorderStyle {
 }
 
 #[derive(Clone)]
-pub struct Window(Rc<WindowData>);
+pub struct Window(pub Rc<WindowData>);
 
 impl Deref for Window {
     type Target = Rc<WindowData>;
@@ -99,6 +99,10 @@ impl PrivControl for WindowData {
 }
 
 impl Control for WindowData {
+    fn as_window(&self) -> Option<Window> {
+        Some(self.backend.window())
+    }
+
     fn visibility(&self) -> Visibility {
         self.backend.visibility()
     }
@@ -131,6 +135,14 @@ impl Control for WindowData {
 
     fn children(&self) -> &RefCell<ChildrenVec> {
         &self.children
+    }
+
+    fn parent(&self) -> Option<Rc<dyn Control>> {
+        None
+    }
+
+    fn window(&self) -> Option<Window> {
+        self.as_window()
     }
 
     fn event_handlers(&self) -> &EventHandlerVec {

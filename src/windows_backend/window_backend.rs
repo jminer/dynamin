@@ -18,7 +18,7 @@ use std::rc::{Rc, Weak};
 use std::sync::{Once, ONCE_INIT};
 
 use crate::control::PaintingEvent;
-use crate::{Control, Visibility, WindowBorderStyle};
+use crate::{Control, Visibility, Window, WindowBorderStyle};
 use crate::generic_backend::GenericWindowBackend;
 use crate::{WindowData, WindowEvent};
 
@@ -274,6 +274,15 @@ impl GenericWindowBackend for WindowBackend {
 
     fn set_window(&self, window: Weak<WindowData>) {
         self.window.set(Some(window));
+    }
+
+    fn window(&self) -> Window {
+        let window = self.window.take();
+        // The unwrap can't fail because `self` is a reference to the window so obviously it hasn't
+        // been dropped.
+        let window_copy = window.as_ref().expect("backend.window should be set").upgrade().unwrap();
+        self.window.set(window);
+        Window(window_copy)
     }
 
     fn set_text(&self, text: &str) {

@@ -11,6 +11,7 @@ use std::rc::{Rc, Weak};
 
 use zaffre::{Painter, Point2, Size2};
 
+use crate::Window;
 use crate::bitfield::BitField;
 use crate::event_vec::{EventHandler, EventHandlerVec};
 
@@ -51,6 +52,8 @@ pub trait PrivControl {
 }
 
 pub trait Control : PrivControl {
+    fn as_window(&self) -> Option<Window>;
+
     fn visibility(&self) -> Visibility;
     fn set_visibility(&self, visibility: Visibility);
 
@@ -64,6 +67,10 @@ pub trait Control : PrivControl {
     fn set_tab_index(&self, tab_index: u16);
 
     fn children(&self) -> &RefCell<ChildrenVec>;
+
+    fn parent(&self) -> Option<Rc<dyn Control>>;
+
+    fn window(&self) -> Option<Window>;
 
     fn event_handlers(&self) -> &EventHandlerVec;
 
@@ -88,11 +95,11 @@ impl ChildrenVec {
         self.update_control();
     }
 
-    pub fn push<T>(&mut self, control: T) where T: Into<Rc<dyn Control>> {
-        let control = control.into();
-        control.set_parent(self.control.clone()
+    pub fn push<T>(&mut self, new_control: T) where T: Into<Rc<dyn Control>> {
+        let new_control = new_control.into();
+        new_control.set_parent(self.control.clone()
             .expect("ChildrenVec control not set; need to call register_handle()"));
-        self.vec.push(control);
+        self.vec.push(new_control);
         self.update_control();
     }
 
@@ -189,6 +196,10 @@ impl PrivControl for SubControlData {
 }
 
 impl Control for SubControlData {
+    fn as_window(&self) -> Option<Window> {
+        None
+    }
+
     fn visibility(&self) -> Visibility {
         u8_to_visibility(self.bit_fields.get().get_bits(VISIBILITY_POS..ELASTIC_X_POS))
     }
@@ -227,6 +238,18 @@ impl Control for SubControlData {
         &self.children
     }
 
+    fn parent(&self) -> Option<Rc<dyn Control>> {
+        let parent = self.parent.take();
+        let parent_copy = parent.clone();
+        self.parent.set(parent);
+        parent_copy.and_then(|p| p.upgrade())
+    }
+
+    // Returns the top-level window containing this control or `None`.
+    fn window(&self) -> Option<Window> {
+        self.parent().and_then(|p| p.window())
+    }
+
     fn event_handlers(&self) -> &EventHandlerVec {
         &self.event_handlers
     }
@@ -246,6 +269,10 @@ impl<T> PrivControl for T where T: SubControlRef {
 }
 
 impl<T> Control for T where T: SubControlRef {
+    fn as_window(&self) -> Option<Window> {
+        self.sub_control_ref().as_window()
+    }
+
     fn visibility(&self) -> Visibility {
         self.sub_control_ref().visibility()
     }
@@ -276,6 +303,14 @@ impl<T> Control for T where T: SubControlRef {
 
     fn children(&self) -> &RefCell<ChildrenVec> {
         self.sub_control_ref().children()
+    }
+
+    fn parent(&self) -> Option<Rc<dyn Control>> {
+        self.sub_control_ref().parent()
+    }
+
+    fn window(&self) -> Option<Window> {
+        self.sub_control_ref().window()
     }
 
     fn event_handlers(&self) -> &EventHandlerVec {
