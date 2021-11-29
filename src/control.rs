@@ -120,7 +120,7 @@ pub struct SubControl(Rc<SubControlData>);
 
 impl SubControl {
     pub fn new() -> Self {
-        SubControl(Rc::new(SubControlData::new()))
+        SubControl::register_handle(SubControl(Rc::new(SubControlData::new())))
     }
 
     pub fn register_handle<T>(handle: T) -> T
@@ -147,6 +147,12 @@ impl Deref for SubControl {
 impl From<SubControl> for Rc<dyn Control> {
     fn from(self_: SubControl) -> Self {
         self_.0 as Rc<dyn Control>
+    }
+}
+
+impl From<SubControl> for Rc<dyn EventHandler> {
+    fn from(self_: SubControl) -> Self {
+        self_.0 as Rc<dyn EventHandler>
     }
 }
 
@@ -255,6 +261,11 @@ impl Control for SubControlData {
     }
 
     fn repaint_later(&self) {
+    }
+}
+
+impl EventHandler for SubControlData {
+    fn on_event(&self, route: &mut EventRoute) {
     }
 }
 
