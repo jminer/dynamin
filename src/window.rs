@@ -14,7 +14,7 @@ use zaffre::{Point2, Size2};
 use crate::generic_backend::GenericWindowBackend;
 use crate::backend::WindowBackend;
 use crate::{ChildrenVec, Control, EventHandlerVec, Visibility};
-use crate::control::PrivControl;
+use crate::control::{PaintingEvent, PrivControl};
 
 // TODO: screenshots of border styles
 /// The style of border around a window.
@@ -150,5 +150,12 @@ impl Control for WindowData {
     }
 
     fn repaint_later(&self) {
+    }
+
+    fn dispatch_painting(&self, event: &mut PaintingEvent) {
+        let children = self.children().borrow();
+        if let Some(child) = children.first() {
+            child.dispatch_painting(event);
+        }
     }
 }

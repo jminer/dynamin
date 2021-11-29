@@ -13,7 +13,7 @@ use zaffre::{Painter, Point2, Size2};
 
 use crate::Window;
 use crate::bitfield::BitField;
-use crate::event_vec::{EventHandler, EventHandlerVec};
+use crate::event_vec::{EventHandler, EventHandlerVec, EventRoute};
 
 /// Whether a control is visible or affects layout.
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -75,6 +75,8 @@ pub trait Control : PrivControl {
     fn event_handlers(&self) -> &EventHandlerVec;
 
     fn repaint_later(&self);
+
+    fn dispatch_painting(&self, event: &mut PaintingEvent);
 }
 
 pub struct ChildrenVec {
@@ -262,6 +264,13 @@ impl Control for SubControlData {
 
     fn repaint_later(&self) {
     }
+
+    fn dispatch_painting(&self, event: &mut PaintingEvent) {
+        self.event_handlers.send(event);
+        for child in self.children().borrow().iter() {
+            child.event_handlers().send(event);
+        }
+    }
 }
 
 impl EventHandler for SubControlData {
@@ -331,6 +340,11 @@ impl<T> Control for T where T: SubControlRef {
     fn repaint_later(&self) {
         self.sub_control_ref().repaint_later()
     }
+
+    fn dispatch_painting(&self, event: &mut PaintingEvent) {
+        self.sub_control_ref().dispatch_painting(event)
+    }
+
 }
 
 impl SubControlData {
@@ -362,10 +376,6 @@ impl SubControlData {
 
     pub fn set_focusable(&self, focusable: bool) {
         self.bit_fields.set(self.bit_fields.get().set_bit(FOCUSABLE_POS, focusable));
-    }
-
-    pub fn dispatch_painting(&self, event: &mut PaintingEvent) {
-        self.event_handlers.send(event)
     }
 }
 

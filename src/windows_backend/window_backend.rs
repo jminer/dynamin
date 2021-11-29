@@ -114,7 +114,7 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
                 painter,
             };
             if let Some(child) = window.children().borrow().first() {
-                child.event_handlers().send(&mut event);
+                child.dispatch_painting(&mut event);
             }
 
             surface.end_painting(ps.hdc);
