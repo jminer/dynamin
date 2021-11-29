@@ -27,15 +27,15 @@ fn main() {
         }
     });
 
-    // let parent = SubControl::new();
-    // parent.set_size(&Size2::<f64>::new(200.0, 200.0));
+    let parent = SubControl::new();
+    parent.set_size(&Size2::<f64>::new(200.0, 200.0));
 
     let b = Button::new();
     b.set_location(&Point2::<f64>::new(50.0, 50.0));
     b.set_size(&Size2::<f64>::new(75.0, 23.0));
-    //parent.children().borrow_mut().push(b.clone());
+    parent.children().borrow_mut().push(b.clone());
 
-    win.set_child(b.into());
+    win.set_child(parent.into());
 
     EventLoop::current().run();
 }
