@@ -10,8 +10,8 @@ extern crate dynamin;
 extern crate zaffre;
 
 use event_loop::EventLoop;
-use dynamin::{Button, Control, Visibility, Window, WindowEvent};
-use zaffre::Point2;
+use dynamin::{Button, Control, SubControl, Visibility, Window, WindowEvent};
+use zaffre::{Point2, Size2};
 
 fn main() {
     let mut win = Window::new();
@@ -27,7 +27,15 @@ fn main() {
         }
     });
 
+    // let parent = SubControl::new();
+    // parent.set_size(&Size2::<f64>::new(200.0, 200.0));
+
     let b = Button::new();
+    b.set_location(&Point2::<f64>::new(50.0, 50.0));
+    b.set_size(&Size2::<f64>::new(75.0, 23.0));
+    //parent.children().borrow_mut().push(b.clone());
+
+    win.set_child(b.into());
 
     EventLoop::current().run();
 }

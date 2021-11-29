@@ -11,7 +11,7 @@
 #[allow(dead_code)]
 
 pub use button::{Button};
-pub use control::{ChildrenVec, Control, set_tab_order, Visibility};
+pub use control::{ChildrenVec, Control, set_tab_order, SubControl, Visibility};
 pub use event_vec::EventHandlerVec;
 pub use window::{Window, WindowData, WindowBorderStyle, WindowEvent};
 use zaffre::RenderingBackend;

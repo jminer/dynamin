@@ -17,7 +17,8 @@ use std::os::windows::ffi::OsStrExt;
 use std::rc::{Rc, Weak};
 use std::sync::{Once, ONCE_INIT};
 
-use crate::{Visibility, WindowBorderStyle};
+use crate::control::PaintingEvent;
+use crate::{Control, Visibility, WindowBorderStyle};
 use crate::generic_backend::GenericWindowBackend;
 use crate::{WindowData, WindowEvent};
 
@@ -109,8 +110,13 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
             // painter.stroke(&path.as_path(),
             //     &Brush::Solid(Color::from_rgba(0, 0, 255, 128)),
             //     &StrokeStyle::with_width(2.0f32));
+            let mut event = PaintingEvent {
+                painter,
+            };
+            if let Some(child) = window.children().borrow().first() {
+                child.event_handlers().send(&mut event);
+            }
 
-            drop(painter);
             surface.end_painting(ps.hdc);
             backend.surface.set(Some(surface));
 

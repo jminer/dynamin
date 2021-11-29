@@ -9,7 +9,7 @@ use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
-use zaffre::{Point2, Size2};
+use zaffre::{Painter, Point2, Size2};
 
 use crate::bitfield::BitField;
 use crate::event_vec::{EventHandler, EventHandlerVec};
@@ -156,7 +156,6 @@ pub struct SubControlData {
     bit_fields: Cell<u8>,
 }
 
-#[derive(Debug)]
 #[non_exhaustive]
 pub enum SubControlEvent {
     Moved,
@@ -168,6 +167,12 @@ pub enum SubControlEvent {
     MouseMoved,
     KeyDown,
     KeyUp,
+    Painting(PaintingEvent),
+}
+
+#[non_exhaustive]
+pub struct PaintingEvent {
+    pub painter: Box<dyn Painter>,
 }
 
 const FOCUSABLE_POS: u8 = 0;
@@ -311,6 +316,10 @@ impl SubControlData {
 
     pub fn set_focusable(&self, focusable: bool) {
         self.bit_fields.set(self.bit_fields.get().set_bit(FOCUSABLE_POS, focusable));
+    }
+
+    pub fn dispatch_painting(&self, event: &mut PaintingEvent) {
+        self.event_handlers.send(event)
     }
 }
 

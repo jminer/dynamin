@@ -8,8 +8,11 @@
 use std::any::Any;
 use std::ops::Deref;
 use std::rc::Rc;
+use std::slice::SliceIndex;
 
-use crate::control::{Control, SubControl, SubControlData, SubControlRef, SubControlEvent};
+use zaffre::{Brush, Color, PathBuf, Point2, Size2, StrokeStyle};
+
+use crate::control::{Control, PaintingEvent, SubControl, SubControlData, SubControlEvent, SubControlRef};
 use crate::event_vec::{EventRoute, EventHandler};
 
 // TODO: generate with a proc macro
@@ -67,6 +70,21 @@ pub enum ButtonEvent {
 
 impl EventHandler for ButtonData {
     fn on_event(&self, route: &mut EventRoute) {
+        if let Some(PaintingEvent { painter }) = route.event.downcast_mut() {
+            let size = self.sub_control.size();
+            let size = Size2::new(size.width as f32, size.height as f32);
+
+            let mut path = PathBuf::new();
+            path.move_to(Point2::new(0.5f32, 0.5f32));
+            path.line_to(Point2::new(size.width - 0.5, 0.5f32));
+            path.line_to(Point2::new(size.width - 0.5, size.height - 0.5));
+            path.line_to(Point2::new(0.5f32, size.height - 0.5));
+            path.close();
+
+            painter.stroke_path(&mut path.path_iter(),
+                &Brush::Solid(Color::from_rgba(128, 128, 128, 255)),
+                &StrokeStyle::with_width(1.0));
+        }
         match route.event.downcast_mut::<SubControlEvent>() {
             Some(SubControlEvent::MouseDown) => {
             }
