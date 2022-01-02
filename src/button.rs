@@ -114,4 +114,15 @@ impl ButtonData {
             sub_control: SubControlData::new(),
         }
     }
+
+    // Convenience method to add an event handler that is called for `ClickEvent`s.
+    pub fn on_click_event<F>(&self, mut handler: F)
+        where F: for<'a> FnMut(&'a mut EventRoute) + 'static
+    {
+        self.event_handlers().add(move |mut route| {
+            if let Some(_) = route.event.downcast_mut::<ClickEvent>() {
+                handler(&mut route);
+            }
+        });
+    }
 }

@@ -33,10 +33,8 @@ fn main() {
     let b = Button::new();
     b.set_location(&Point2::<f64>::new(50.0, 50.0));
     b.set_size(&Size2::<f64>::new(75.0, 23.0));
-    b.event_handlers().add(|route| {
-        if let Some(_) = route.event.downcast_mut::<ClickEvent>() {
-            println!("clicked");
-        }
+    b.on_click_event(|_| {
+        println!("clicked");
     });
     parent.children().borrow_mut().push(b.clone());
 
