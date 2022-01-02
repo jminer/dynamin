@@ -268,7 +268,10 @@ impl Control for SubControlData {
     fn dispatch_painting(&self, event: &mut PaintingEvent) {
         self.event_handlers.send(event);
         for child in self.children().borrow().iter() {
+            event.painter.save();
+            event.painter.translate(child.location().x, child.location().y);
             child.event_handlers().send(event);
+            event.painter.restore();
         }
     }
 }

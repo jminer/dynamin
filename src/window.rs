@@ -155,7 +155,10 @@ impl Control for WindowData {
     fn dispatch_painting(&self, event: &mut PaintingEvent) {
         let children = self.children().borrow();
         if let Some(child) = children.first() {
-            child.dispatch_painting(event);
+            event.painter.save();
+            event.painter.translate(child.location().x, child.location().y);
+            child.event_handlers().send(event);
+            event.painter.restore();
         }
     }
 }
