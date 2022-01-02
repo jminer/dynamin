@@ -18,11 +18,12 @@ use std::rc::{Rc, Weak};
 use std::sync::{Once, ONCE_INIT};
 
 use crate::control::PaintingEvent;
-use crate::{Control, Visibility, Window, WindowBorderStyle};
+use crate::{Control, Visibility, Window, WindowBorderStyle, MouseDownEvent, MouseUpEvent};
 use crate::generic_backend::GenericWindowBackend;
 use crate::{WindowData, WindowEvent};
 
 use smallvec::SmallVec;
+use winapi::shared::windowsx::{GET_X_LPARAM, GET_Y_LPARAM};
 use zaffre::{Brush, Color, PainterExt, PathBuf, Point2, RenderingBackend, Size2, StrokeStyle, SwapchainSurface};
 use zaffre::AsPathIter;
 use self::winapi::shared::{
@@ -121,6 +122,23 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
             backend.surface.set(Some(surface));
 
             EndPaint(hwnd, &mut ps);
+            0
+        }
+        WM_LBUTTONDOWN | WM_LBUTTONUP => {
+            let window = get_window(hwnd);
+
+            if let Some(child) = window.children().borrow().first() {
+                let (x, y) = (GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+                let descendant = child.descendant_at_point(x as f64, y as f64)
+                    .unwrap_or_else(|| child.clone());
+                if uMsg == WM_LBUTTONDOWN {
+                    descendant.event_handlers().send(&mut MouseDownEvent {
+                    });
+                } else if uMsg == WM_LBUTTONUP {
+                    descendant.event_handlers().send(&mut MouseUpEvent {
+                    });
+                }
+            }
             0
         }
         _ => DefWindowProcW(hwnd, uMsg, wParam, lParam)

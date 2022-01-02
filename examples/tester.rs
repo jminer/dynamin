@@ -10,7 +10,7 @@ extern crate dynamin;
 extern crate zaffre;
 
 use event_loop::EventLoop;
-use dynamin::{Button, Control, SubControl, Visibility, Window, WindowEvent};
+use dynamin::{Button, Control, SubControl, Visibility, Window, WindowEvent, ClickEvent};
 use zaffre::{Point2, Size2};
 
 fn main() {
@@ -33,6 +33,11 @@ fn main() {
     let b = Button::new();
     b.set_location(&Point2::<f64>::new(50.0, 50.0));
     b.set_size(&Size2::<f64>::new(75.0, 23.0));
+    b.event_handlers().add(|route| {
+        if let Some(_) = route.event.downcast_mut::<ClickEvent>() {
+            println!("clicked");
+        }
+    });
     parent.children().borrow_mut().push(b.clone());
 
     win.set_child(parent.into());

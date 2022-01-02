@@ -16,7 +16,7 @@ smallvec = "0.6"
 zaffre = { path = "../zaffre" }
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["libloaderapi", "windef", "winuser"] }
+winapi = { version = "0.3", features = ["libloaderapi", "windef", "windowsx", "winuser"] }
 #winapi = { path = "../winapi-rs" }
 
 [target.'cfg(unix)'.dependencies]

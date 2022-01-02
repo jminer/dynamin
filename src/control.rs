@@ -9,7 +9,7 @@ use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
-use zaffre::{Painter, Point2, Size2};
+use zaffre::{Painter, Point2, Size2, Rect};
 
 use crate::Window;
 use crate::bitfield::BitField;
@@ -77,6 +77,28 @@ pub trait Control : PrivControl {
     fn repaint_later(&self);
 
     fn dispatch_painting(&self, event: &mut PaintingEvent);
+
+    fn child_at_point(&self, x: f64, y: f64) -> Option<Rc<dyn Control>> {
+        self.children().borrow().iter()
+            .find(|child| (child.location() + child.size()).contains_pt(Point2::new(x, y)))
+            .map(|c| c.clone())
+
+        // for child in self.children().borrow().iter() {
+        //     if (child.location() + child.size()).contains_pt(Point2::new(x, y)) {
+        //         return Some(child.clone());
+        //     }
+        // }
+        // None
+    }
+
+    fn descendant_at_point(&self, x: f64, y: f64) -> Option<Rc<dyn Control>> {
+        self.children().borrow().iter()
+            .find(|child| (child.location() + child.size()).contains_pt(Point2::new(x, y)))
+            .map(|child| {
+                let (cx, cy) = (x - child.location().x, y - child.location().y);
+                child.descendant_at_point(cx, cy).unwrap_or_else(|| child.clone())
+            })
+    }
 }
 
 pub struct ChildrenVec {
@@ -183,6 +205,14 @@ pub enum SubControlEvent {
     KeyDown,
     KeyUp,
     Painting(PaintingEvent),
+}
+
+#[non_exhaustive]
+pub struct MouseDownEvent {
+}
+
+#[non_exhaustive]
+pub struct MouseUpEvent {
 }
 
 #[non_exhaustive]
