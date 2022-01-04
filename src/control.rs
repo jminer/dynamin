@@ -216,6 +216,20 @@ pub struct MouseUpEvent {
 }
 
 #[non_exhaustive]
+pub struct MouseMovedEvent {
+}
+
+#[non_exhaustive]
+pub struct MouseDraggedEvent {
+}
+
+#[non_exhaustive]
+pub struct MouseEnteredEvent;
+
+#[non_exhaustive]
+pub struct MouseLeftEvent;
+
+#[non_exhaustive]
 pub struct PaintingEvent {
     pub painter: Box<dyn Painter>,
 }
@@ -416,6 +430,34 @@ impl Default for SubControlData {
     fn default() -> Self {
         Self::new()
     }
+}
+
+thread_local! {
+    static HOT_CONTROL: RefCell<Option<Weak<dyn Control>>> = Default::default();
+}
+
+pub(crate) fn get_hot_control() -> Option<Weak<dyn Control>> {
+    HOT_CONTROL.with(|hot_control| hot_control.borrow().clone())
+}
+
+// Sets which control the mouse is over.
+pub(crate) fn set_hot_control(control: Option<&Rc<dyn Control>>) {
+    HOT_CONTROL.with(|hot_control| {
+        let mut hot_control_ref = hot_control.borrow_mut();
+        let old = hot_control_ref.as_ref().map(|c| c.as_ptr());
+        let new = control.map(Rc::as_ptr);
+        if new != old {
+            if let Some(old_rc) = hot_control_ref.as_ref().and_then(|c| c.upgrade()) {
+                old_rc.event_handlers().send(&mut MouseLeftEvent);
+            }
+
+            *hot_control_ref = control.map(|c| Rc::downgrade(c));
+
+            if let Some(control) = control {
+                control.event_handlers().send(&mut MouseEnteredEvent);
+            }
+        }
+    });
 }
 
 

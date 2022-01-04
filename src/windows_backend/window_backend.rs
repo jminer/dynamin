@@ -17,8 +17,8 @@ use std::os::windows::ffi::OsStrExt;
 use std::rc::{Rc, Weak};
 use std::sync::{Once, ONCE_INIT};
 
-use crate::control::PaintingEvent;
-use crate::{Control, Visibility, Window, WindowBorderStyle, MouseDownEvent, MouseUpEvent};
+use crate::control::{PaintingEvent, set_hot_control};
+use crate::{Control, Visibility, Window, WindowBorderStyle, MouseDownEvent, MouseUpEvent, MouseMovedEvent, MouseDraggedEvent};
 use crate::generic_backend::GenericWindowBackend;
 use crate::{WindowData, WindowEvent};
 
@@ -54,6 +54,7 @@ pub struct WindowBackend {
     size: Cell<Size2<f64>>,
     border_style: Cell<WindowBorderStyle>,
     resizable: Cell<bool>,
+    tracking_mouse_leave: Cell<bool>,
 }
 
 trait ToWide {
@@ -124,21 +125,77 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
             EndPaint(hwnd, &mut ps);
             0
         }
-        WM_LBUTTONDOWN | WM_LBUTTONUP => {
+        WM_LBUTTONDOWN | WM_MBUTTONDOWN | WM_RBUTTONDOWN => {
+            SetCapture(hwnd);
+            let (x, y) = (GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+
             let window = get_window(hwnd);
 
             if let Some(child) = window.children().borrow().first() {
-                let (x, y) = (GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
                 let descendant = child.descendant_at_point(x as f64, y as f64)
                     .unwrap_or_else(|| child.clone());
-                if uMsg == WM_LBUTTONDOWN {
-                    descendant.event_handlers().send(&mut MouseDownEvent {
+                descendant.event_handlers().send(&mut MouseDownEvent {
+                });
+            }
+
+            0
+        }
+        WM_LBUTTONUP | WM_MBUTTONUP | WM_RBUTTONUP => {
+            ReleaseCapture();
+
+            let (x, y) = (GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+
+            let window = get_window(hwnd);
+
+            if let Some(child) = window.children().borrow().first() {
+                let descendant = child.descendant_at_point(x as f64, y as f64)
+                    .unwrap_or_else(|| child.clone());
+                descendant.event_handlers().send(&mut MouseUpEvent {
+                });
+            }
+
+            0
+        }
+        WM_MOUSEMOVE => {
+            let (x, y) = (GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+
+            let window = get_window(hwnd);
+            let backend = &window.backend;
+
+            if !backend.tracking_mouse_leave.get() {
+                backend.tracking_mouse_leave.set(true);
+
+                let mut tme: TRACKMOUSEEVENT = mem::zeroed();
+                tme.cbSize = mem::size_of::<TRACKMOUSEEVENT>() as u32;
+                tme.dwFlags = TME_LEAVE;
+                tme.hwndTrack = hwnd;
+                TrackMouseEvent(&mut tme);
+            }
+
+            if let Some(child) = window.children().borrow().first() {
+                let descendant = child.descendant_at_point(x as f64, y as f64)
+                    .unwrap_or_else(|| child.clone());
+                set_hot_control(Some(&descendant));
+                if wParam & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON | MK_XBUTTON1 | MK_XBUTTON2) != 0
+                {
+                    descendant.event_handlers().send(&mut MouseDraggedEvent {
                     });
-                } else if uMsg == WM_LBUTTONUP {
-                    descendant.event_handlers().send(&mut MouseUpEvent {
+                } else {
+                    descendant.event_handlers().send(&mut MouseMovedEvent {
                     });
                 }
             }
+
+            0
+        }
+        WM_MOUSELEAVE => {
+            let window = get_window(hwnd);
+            let backend = &window.backend;
+
+            backend.tracking_mouse_leave.set(false);
+
+            set_hot_control(None);
+
             0
         }
         _ => DefWindowProcW(hwnd, uMsg, wParam, lParam)
@@ -287,6 +344,7 @@ impl GenericWindowBackend for WindowBackend {
             size: Cell::new(Size2::new(400.0, 300.0)),
             border_style: Cell::new(WindowBorderStyle::Normal),
             resizable: Cell::new(true),
+            tracking_mouse_leave: Cell::new(false),
         }
     }
 
