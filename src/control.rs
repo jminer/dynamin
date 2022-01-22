@@ -207,6 +207,14 @@ pub enum SubControlEvent {
     Painting(PaintingEvent),
 }
 
+pub enum MouseButton {
+    Left,
+    Middle,
+    Right,
+    Back,
+    Forward,
+}
+
 #[non_exhaustive]
 pub struct MouseDownEvent {
 }
