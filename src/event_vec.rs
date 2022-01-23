@@ -20,7 +20,7 @@ use smallvec::SmallVec;
 
 pub struct EventHandlerVec(RefCell<Rc<Vec<Rc<RefCell<dyn EventHandlerFn>>>>>);
 
-pub trait EventHandlerFn = for<'a> FnMut(&'a mut EventRoute);
+trait EventHandlerFn = for<'a> FnMut(&'a mut EventRoute);
 
 #[non_exhaustive]
 pub struct EventRoute<'a> {

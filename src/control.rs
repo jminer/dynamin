@@ -193,20 +193,6 @@ pub struct SubControlData {
     bit_fields: Cell<u8>,
 }
 
-#[non_exhaustive]
-pub enum SubControlEvent {
-    Moved,
-    Resized,
-    MouseEntered,
-    MouseLeft,
-    MouseDown,
-    MouseUp,
-    MouseMoved,
-    KeyDown,
-    KeyUp,
-    Painting(PaintingEvent),
-}
-
 pub enum MouseButton {
     Left,
     Middle,

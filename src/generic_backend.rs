@@ -13,9 +13,14 @@ use crate::Window;
 use crate::window::WindowData;
 use super::Visibility;
 
-//pub trait GenericCursorBackend {
+pub trait GenericCursorBackend {
 
-//}
+    fn none() -> Self;
+
+    fn arrow() -> Self;
+
+    fn text() -> Self;
+}
 
 pub trait GenericWindowBackend {
     fn new() -> Self;

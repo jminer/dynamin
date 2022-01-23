@@ -5,8 +5,10 @@
  *
  */
 
+pub use self::cursor_backend::CursorBackend;
 pub use self::window_backend::WindowBackend;
 
+pub mod cursor_backend;
 pub mod window_backend;
 
 use std::ffi::OsStr;

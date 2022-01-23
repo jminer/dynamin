@@ -8,10 +8,13 @@
 #![feature(non_exhaustive)]
 #![feature(trait_alias)]
 
+#![deny(unreachable_pub)]
+
 #[allow(dead_code)]
 
 pub use button::{Button, ClickEvent};
-pub use control::{ChildrenVec, Control, MouseEnteredEvent, MouseLeftEvent, MouseDownEvent, MouseUpEvent, MouseDraggedEvent, MouseMovedEvent, PaintingEvent, set_tab_order, SubControl, Visibility};
+pub use control::{ChildrenVec, Control, MouseButton, MouseEnteredEvent, MouseLeftEvent, MouseDownEvent, MouseUpEvent, MouseDraggedEvent, MouseMovedEvent, PaintingEvent, set_tab_order, SubControl, Visibility};
+pub use cursor::{Cursor, CursorData};
 pub use event_vec::EventHandlerVec;
 pub use window::{Window, WindowData, WindowBorderStyle, WindowEvent};
 use zaffre::RenderingBackend;
@@ -19,6 +22,7 @@ use zaffre::RenderingBackend;
 mod bitfield;
 mod button;
 mod control;
+mod cursor;
 mod event_vec;
 mod window;
 

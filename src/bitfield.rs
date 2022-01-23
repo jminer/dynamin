@@ -10,7 +10,7 @@ use std::ops::{BitAnd, BitOr, Not, Range, Shl, Shr};
 // I thought about using the bit_field crate, but less dependencies are better, plus that crate
 // has asserts (not even debug_asserts) in the functions that would really bloat and slow the code.
 
-pub trait BitField {
+pub(crate) trait BitField {
     fn get_bit(&self, n: u8) -> bool;
 
     fn get_bits(&self, range: Range<u8>) -> Self;

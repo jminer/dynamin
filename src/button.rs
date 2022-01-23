@@ -12,7 +12,7 @@ use std::slice::SliceIndex;
 
 use zaffre::{Brush, Color, PathBuf, Point2, Size2, StrokeStyle};
 
-use crate::control::{Control, PaintingEvent, SubControl, SubControlData, SubControlEvent, SubControlRef, MouseUpEvent};
+use crate::control::{Control, PaintingEvent, SubControl, SubControlData, SubControlRef, MouseUpEvent};
 use crate::event_vec::{EventRoute, EventHandler};
 
 // TODO: generate with a proc macro
@@ -64,12 +64,6 @@ impl SubControlRef for ButtonData {
 
 #[derive(Debug)]
 #[non_exhaustive]
-pub enum ButtonEvent {
-    Clicked,
-}
-
-#[derive(Debug)]
-#[non_exhaustive]
 pub struct ClickEvent;
 
 impl EventHandler for ButtonData {
@@ -93,17 +87,6 @@ impl EventHandler for ButtonData {
             painter.stroke_path(&mut path.path_iter(),
                 &Brush::Solid(Color::from_rgba(128, 128, 128, 255)),
                 &StrokeStyle::with_width(1.0));
-        }
-        match route.event.downcast_mut::<SubControlEvent>() {
-            Some(SubControlEvent::MouseDown) => {
-            }
-            Some(SubControlEvent::MouseUp) => {
-                let mut clicked_event = ButtonEvent::Clicked;
-                self.sub_control.event_handlers().send(&mut clicked_event);
-            }
-            Some(SubControlEvent::MouseMoved) => {
-            }
-            _ => {}
         }
     }
 }
