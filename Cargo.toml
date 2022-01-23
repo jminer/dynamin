@@ -15,9 +15,16 @@ event-loop = { path = "../event-loop" }
 smallvec = "0.6"
 zaffre = { path = "../zaffre" }
 
-[target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["libloaderapi", "windef", "windowsx", "winuser"] }
-#winapi = { path = "../winapi-rs" }
+[target.'cfg(windows)'.dependencies.windows]
+version = "0.30"
+features = [
+    "Win32_System_LibraryLoader",
+    "Win32_UI_Controls",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+]
 
 [target.'cfg(unix)'.dependencies]
 gtk-sys = { version = "0.10.0", features = ["dox"] }

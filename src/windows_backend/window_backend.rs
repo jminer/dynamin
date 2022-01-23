@@ -5,14 +5,12 @@
  *
  */
 
-extern crate winapi;
-
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::ptr;
 use std::ffi::OsStr;
 use std::mem;
-use std::os::raw::c_int;
+use std::os::raw::{c_int, c_short, c_ushort};
 use std::os::windows::ffi::OsStrExt;
 use std::rc::{Rc, Weak};
 use std::sync::{Once, ONCE_INIT};
@@ -23,21 +21,44 @@ use crate::generic_backend::GenericWindowBackend;
 use crate::{WindowData, WindowEvent};
 
 use smallvec::SmallVec;
-use winapi::shared::windowsx::{GET_X_LPARAM, GET_Y_LPARAM};
+use windows::Win32::Foundation::{HWND, WPARAM, LPARAM, LRESULT, PWSTR, HINSTANCE};
+use windows::Win32::Graphics::Gdi::{PAINTSTRUCT, BeginPaint, EndPaint};
+use windows::Win32::System::LibraryLoader::GetModuleHandleW;
+use windows::Win32::UI::Controls::WM_MOUSELEAVE;
+use windows::Win32::UI::Input::KeyboardAndMouse::{SetCapture, ReleaseCapture, TRACKMOUSEEVENT, TME_LEAVE, TrackMouseEvent};
+use windows::Win32::UI::WindowsAndMessaging::{WM_LBUTTONDOWN, WM_MBUTTONDOWN, WM_RBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONUP, WM_RBUTTONUP, MK_LBUTTON, MK_MBUTTON, MK_RBUTTON, MK_XBUTTON1, MK_XBUTTON2, DefWindowProcW, DestroyWindow, GetWindowLongW, GWL_STYLE, GWL_EXSTYLE, WS_DLGFRAME, WS_BORDER, WS_THICKFRAME, WS_MINIMIZEBOX, WS_SYSMENU, WS_EX_TOOLWINDOW, SetWindowLongW, SetWindowPos, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SWP_FRAMECHANGED, WNDCLASSEXW, CS_DBLCLKS, RegisterClassExW, CreateWindowExW, HMENU, SetWindowTextW, ShowWindow, SW_SHOW, SW_HIDE, WM_CLOSE, WM_PAINT, WM_MOUSEMOVE};
 use zaffre::{Brush, Color, PainterExt, PathBuf, Point2, RenderingBackend, Size2, StrokeStyle, SwapchainSurface};
 use zaffre::AsPathIter;
-use self::winapi::shared::{
-    minwindef::*,
-    ntdef::*,
-    windef::*,
-};
-use self::winapi::um::{
-    libloaderapi::*,
-    winuser::*,
-};
-
 
 use super::str_to_wide_vec;
+
+// Copied from winapi temporarily until hopefully the windows crate adds them.
+
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your option.
+// All files in the project carrying such notice may not be copied, modified, or distributed
+// except according to those terms.
+#[allow(non_snake_case)]
+#[inline]
+pub fn LOWORD(l: u32) -> u16 {
+    (l & 0xffff) as u16
+}
+#[allow(non_snake_case)]
+#[inline]
+pub fn HIWORD(l: u32) -> u16 {
+    ((l >> 16) & 0xffff) as u16
+}
+#[allow(non_snake_case)]
+#[inline]
+pub fn GET_X_LPARAM(lp: LPARAM) -> c_int {
+    LOWORD(lp.0 as u32) as c_short as c_int
+}
+#[allow(non_snake_case)]
+#[inline]
+pub fn GET_Y_LPARAM(lp: LPARAM) -> c_int {
+    HIWORD(lp.0 as u32) as c_short as c_int
+}
 
 const WINDOW_CLASS_NAME: &'static str = "DynaminWindowRust";
 
@@ -72,25 +93,25 @@ impl ToWide for str {
 // I considered using SetWindowLongPtr() to store window handles, but a HashMap is far faster
 // than a system call.
 thread_local! {
-    static WINDOWS: RefCell<HashMap<HWND, Weak<WindowData>>> = RefCell::new(HashMap::new());
+    static WINDOWS: RefCell<HashMap<isize, Weak<WindowData>>> = RefCell::new(HashMap::new());
 }
 
 fn get_window(hwnd: HWND) -> Rc<WindowData> {
     // The Rust side object should exist as long as the native window because when the Rust object
     // is dropped, it destroys the native window. Thus, the unwrap() should be safe.
-    WINDOWS.with(|windows| windows.borrow()[&hwnd].upgrade()).unwrap()
+    WINDOWS.with(|windows| windows.borrow()[&hwnd.0].upgrade()).unwrap()
 }
 
 #[allow(non_snake_case)]
 unsafe extern "system"
-fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT {
+fn windowProc(hwnd: HWND, uMsg: u32, wParam: WPARAM, lParam: LPARAM) -> LRESULT {
     match uMsg {
         WM_CLOSE => {
             let window = get_window(hwnd);
             let mut event = WindowEvent::Closing;
             window.event_handlers().send(&mut event);
             // TODO: get handle to window and send Closing event
-            0
+            LRESULT(0)
         }
         WM_PAINT => {
             let mut ps: PAINTSTRUCT = mem::zeroed();
@@ -123,7 +144,7 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
             backend.surface.set(Some(surface));
 
             EndPaint(hwnd, &mut ps);
-            0
+            LRESULT(0)
         }
         WM_LBUTTONDOWN | WM_MBUTTONDOWN | WM_RBUTTONDOWN => {
             SetCapture(hwnd);
@@ -138,7 +159,7 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
                 });
             }
 
-            0
+            LRESULT(0)
         }
         WM_LBUTTONUP | WM_MBUTTONUP | WM_RBUTTONUP => {
             ReleaseCapture();
@@ -154,7 +175,7 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
                 });
             }
 
-            0
+            LRESULT(0)
         }
         WM_MOUSEMOVE => {
             let (x, y) = (GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
@@ -176,6 +197,7 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
                 let descendant = child.descendant_at_point(x as f64, y as f64)
                     .unwrap_or_else(|| child.clone());
                 set_hot_control(Some(&descendant));
+                let wParam = wParam.0 as u32;
                 if wParam & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON | MK_XBUTTON1 | MK_XBUTTON2) != 0
                 {
                     descendant.event_handlers().send(&mut MouseDraggedEvent {
@@ -186,7 +208,7 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
                 }
             }
 
-            0
+            LRESULT(0)
         }
         WM_MOUSELEAVE => {
             let window = get_window(hwnd);
@@ -196,7 +218,7 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
 
             set_hot_control(None);
 
-            0
+            LRESULT(0)
         }
         _ => DefWindowProcW(hwnd, uMsg, wParam, lParam)
     }
@@ -204,26 +226,26 @@ fn windowProc(hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT
 
 impl WindowBackend {
     fn delete_handle(&self) {
-        if !self.handle.get().is_null() {
+        if !self.handle.get().is_invalid() {
             WINDOWS.with(|windows| {
                 let mut windows = windows.borrow_mut();
-                windows.remove(&self.handle.get());
+                windows.remove(&self.handle.get().0);
             });
             unsafe { DestroyWindow(self.handle.get()); }
-            self.handle.set(ptr::null_mut());
+            self.handle.set(HWND(0));
         }
     }
 
-    fn window_styles(&self) -> (DWORD, DWORD) {
+    fn window_styles(&self) -> (u32, u32) {
         let (mut style, mut ex_style) = (0, 0);
         if self.is_handle_created() {
             unsafe {
-                style = GetWindowLongW(self.handle.get(), GWL_STYLE) as DWORD;
-                ex_style = GetWindowLongW(self.handle.get(), GWL_EXSTYLE) as DWORD;
+                style = GetWindowLongW(self.handle.get(), GWL_STYLE) as u32;
+                ex_style = GetWindowLongW(self.handle.get(), GWL_EXSTYLE) as u32;
             }
         }
         {
-            let mut set_if = |s: DWORD, b: bool| {
+            let mut set_if = |s: u32, b: bool| {
                 // if condition satisfied, add style, otherwise clear style
                 if b { (style |= s) } else { (style &= !s) }
             };
@@ -251,9 +273,9 @@ impl WindowBackend {
         }
         let (mut style, mut ex_style) = self.window_styles();
         unsafe {
-            SetWindowLongW(self.handle.get(), GWL_STYLE, style as LONG);
-            SetWindowLongW(self.handle.get(), GWL_EXSTYLE, ex_style as LONG);
-            SetWindowPos(self.handle.get(), ptr::null_mut(), 0, 0, 0, 0,
+            SetWindowLongW(self.handle.get(), GWL_STYLE, style as i32);
+            SetWindowLongW(self.handle.get(), GWL_EXSTYLE, ex_style as i32);
+            SetWindowPos(self.handle.get(), HWND(0), 0, 0, 0, 0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
         }
     }
@@ -262,13 +284,14 @@ impl WindowBackend {
         REGISTER_WINDOW_CLASS.call_once(|| {
             unsafe {
                 let mut class_name_buf = SmallVec::<[u16; 32]>::new();
-                let wide_class_name = str_to_wide_vec(WINDOW_CLASS_NAME, &mut class_name_buf);
+                let wide_class_name = PWSTR(
+                    str_to_wide_vec(WINDOW_CLASS_NAME, &mut class_name_buf) as *mut _);
 
                 let mut wc: WNDCLASSEXW = mem::zeroed();
                 wc.cbSize = mem::size_of::<WNDCLASSEXW>() as u32;
                 wc.style = CS_DBLCLKS;
                 wc.lpfnWndProc = Some(windowProc);
-                wc.hInstance = GetModuleHandleW(ptr::null());
+                wc.hInstance = GetModuleHandleW(PWSTR(ptr::null_mut()));
                 wc.lpszClassName = wide_class_name;
 
                 assert!(RegisterClassExW(&wc) != 0);
@@ -279,10 +302,11 @@ impl WindowBackend {
         self.delete_handle();
 
         let mut class_name_buf = SmallVec::<[u16; 32]>::new();
-        let wide_class_name = str_to_wide_vec(WINDOW_CLASS_NAME, &mut class_name_buf);
+        let wide_class_name = PWSTR(
+            str_to_wide_vec(WINDOW_CLASS_NAME, &mut class_name_buf) as *mut _);
         let mut text_buf = SmallVec::<[u16; 64]>::new();
         let text_temp = self.text.take();
-        let wide_text = str_to_wide_vec(&text_temp, &mut text_buf);
+        let wide_text = PWSTR(str_to_wide_vec(&text_temp, &mut text_buf) as *mut _);
         self.text.set(text_temp);
         unsafe {
             self.handle.set(CreateWindowExW(
@@ -295,15 +319,15 @@ impl WindowBackend {
                 self.size.get().width as c_int,
                 self.size.get().height as c_int,
                 self.owner.get(),
-                ptr::null_mut(),
-                ptr::null_mut(),
+                HMENU(0),
+                HINSTANCE(0),
                 ptr::null_mut(),
             ));
-            assert!(self.handle.get() != ptr::null_mut());
+            assert!(!self.handle.get().is_invalid());
             WINDOWS.with(|windows| {
                 let mut windows = windows.borrow_mut();
                 let window = self.window.take();
-                windows.insert(self.handle.get(), window.clone().unwrap());
+                windows.insert(self.handle.get().0, window.clone().unwrap());
                 self.window.set(window);
             });
 
@@ -314,7 +338,7 @@ impl WindowBackend {
     }
 
     fn is_handle_created(&self) -> bool {
-        !self.handle.get().is_null()
+        !self.handle.get().is_invalid()
     }
 
     fn handle(&self) -> HWND {
@@ -336,8 +360,8 @@ impl GenericWindowBackend for WindowBackend {
         WindowBackend {
             window: Cell::new(None),
             visibility: Cell::new(Visibility::Gone),
-            handle: Cell::new(ptr::null_mut()),
-            owner: Cell::new(ptr::null_mut()),
+            handle: Cell::new(HWND(0)),
+            owner: Cell::new(HWND(0)),
             surface: Cell::new(None),
             text: Cell::new("".to_string()),
             location: Cell::new(Point2::new(0.0, 0.0)),
@@ -366,7 +390,7 @@ impl GenericWindowBackend for WindowBackend {
         if self.is_handle_created() {
             unsafe {
                 let mut text_buf = SmallVec::<[u16; 64]>::new();
-                let wide_text = str_to_wide_vec(text, &mut text_buf);
+                let wide_text = PWSTR(str_to_wide_vec(text, &mut text_buf) as *mut _);
                 SetWindowTextW(self.handle.get(), wide_text);
             }
         }
