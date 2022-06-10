@@ -21,12 +21,13 @@ use crate::generic_backend::GenericWindowBackend;
 use crate::{WindowData, WindowEvent};
 
 use smallvec::SmallVec;
-use windows::Win32::Foundation::{HWND, WPARAM, LPARAM, LRESULT, PWSTR, HINSTANCE};
+use windows::Win32::Foundation::{HWND, WPARAM, LPARAM, LRESULT, HINSTANCE};
 use windows::Win32::Graphics::Gdi::{PAINTSTRUCT, BeginPaint, EndPaint};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::Controls::WM_MOUSELEAVE;
 use windows::Win32::UI::Input::KeyboardAndMouse::{SetCapture, ReleaseCapture, TRACKMOUSEEVENT, TME_LEAVE, TrackMouseEvent};
-use windows::Win32::UI::WindowsAndMessaging::{WM_LBUTTONDOWN, WM_MBUTTONDOWN, WM_RBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONUP, WM_RBUTTONUP, MK_LBUTTON, MK_MBUTTON, MK_RBUTTON, MK_XBUTTON1, MK_XBUTTON2, DefWindowProcW, DestroyWindow, GetWindowLongW, GWL_STYLE, GWL_EXSTYLE, WS_DLGFRAME, WS_BORDER, WS_THICKFRAME, WS_MINIMIZEBOX, WS_SYSMENU, WS_EX_TOOLWINDOW, SetWindowLongW, SetWindowPos, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SWP_FRAMECHANGED, WNDCLASSEXW, CS_DBLCLKS, RegisterClassExW, CreateWindowExW, HMENU, SetWindowTextW, ShowWindow, SW_SHOW, SW_HIDE, WM_CLOSE, WM_PAINT, WM_MOUSEMOVE};
+use windows::Win32::UI::WindowsAndMessaging::{WM_LBUTTONDOWN, WM_MBUTTONDOWN, WM_RBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONUP, WM_RBUTTONUP, MK_LBUTTON, MK_MBUTTON, MK_RBUTTON, MK_XBUTTON1, MK_XBUTTON2, DefWindowProcW, DestroyWindow, GetWindowLongW, GWL_STYLE, GWL_EXSTYLE, WS_DLGFRAME, WS_BORDER, WS_THICKFRAME, WS_MINIMIZEBOX, WS_SYSMENU, WS_EX_TOOLWINDOW, SetWindowLongW, SetWindowPos, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SWP_FRAMECHANGED, WNDCLASSEXW, CS_DBLCLKS, RegisterClassExW, CreateWindowExW, HMENU, SetWindowTextW, ShowWindow, SW_SHOW, SW_HIDE, WM_CLOSE, WM_PAINT, WM_MOUSEMOVE, WINDOW_STYLE, WINDOW_EX_STYLE};
+use windows::core::{PWSTR, PCWSTR};
 use zaffre::{Brush, Color, PainterExt, PathBuf, Point2, RenderingBackend, Size2, StrokeStyle, SwapchainSurface};
 use zaffre::AsPathIter;
 
@@ -226,7 +227,7 @@ fn windowProc(hwnd: HWND, uMsg: u32, wParam: WPARAM, lParam: LPARAM) -> LRESULT 
 
 impl WindowBackend {
     fn delete_handle(&self) {
-        if !self.handle.get().is_invalid() {
+        if self.handle.get() != HWND(0) {
             WINDOWS.with(|windows| {
                 let mut windows = windows.borrow_mut();
                 windows.remove(&self.handle.get().0);
@@ -245,9 +246,9 @@ impl WindowBackend {
             }
         }
         {
-            let mut set_if = |s: u32, b: bool| {
+            let mut set_if = |s: WINDOW_STYLE, b: bool| {
                 // if condition satisfied, add style, otherwise clear style
-                if b { (style |= s) } else { (style &= !s) }
+                if b { (style |= s.0) } else { (style &= !s.0) }
             };
             set_if(WS_DLGFRAME, self.border_style.get() != WindowBorderStyle::None);
             set_if(WS_BORDER, self.border_style.get() != WindowBorderStyle::None);
@@ -259,9 +260,9 @@ impl WindowBackend {
             //    content.max_width == 0 && content.max_height == 0);
             set_if(WS_SYSMENU, self.border_style.get() != WindowBorderStyle::None);
             if self.border_style.get() == WindowBorderStyle::Tool {
-                ex_style |= WS_EX_TOOLWINDOW;
+                ex_style |= WS_EX_TOOLWINDOW.0;
             } else {
-                ex_style &= !WS_EX_TOOLWINDOW;
+                ex_style &= !WS_EX_TOOLWINDOW.0;
             }
         }
         (style, ex_style)
@@ -284,14 +285,15 @@ impl WindowBackend {
         REGISTER_WINDOW_CLASS.call_once(|| {
             unsafe {
                 let mut class_name_buf = SmallVec::<[u16; 32]>::new();
-                let wide_class_name = PWSTR(
+                let wide_class_name = PCWSTR(
                     str_to_wide_vec(WINDOW_CLASS_NAME, &mut class_name_buf) as *mut _);
 
                 let mut wc: WNDCLASSEXW = mem::zeroed();
                 wc.cbSize = mem::size_of::<WNDCLASSEXW>() as u32;
                 wc.style = CS_DBLCLKS;
                 wc.lpfnWndProc = Some(windowProc);
-                wc.hInstance = GetModuleHandleW(PWSTR(ptr::null_mut()));
+                wc.hInstance = GetModuleHandleW(PCWSTR(ptr::null_mut()))
+                    .expect("GetModuleHandleW() failed");
                 wc.lpszClassName = wide_class_name;
 
                 assert!(RegisterClassExW(&wc) != 0);
@@ -302,18 +304,18 @@ impl WindowBackend {
         self.delete_handle();
 
         let mut class_name_buf = SmallVec::<[u16; 32]>::new();
-        let wide_class_name = PWSTR(
+        let wide_class_name = PCWSTR(
             str_to_wide_vec(WINDOW_CLASS_NAME, &mut class_name_buf) as *mut _);
         let mut text_buf = SmallVec::<[u16; 64]>::new();
         let text_temp = self.text.take();
-        let wide_text = PWSTR(str_to_wide_vec(&text_temp, &mut text_buf) as *mut _);
+        let wide_text = PCWSTR(str_to_wide_vec(&text_temp, &mut text_buf) as *mut _);
         self.text.set(text_temp);
         unsafe {
             self.handle.set(CreateWindowExW(
-                ex_style,
+                WINDOW_EX_STYLE(ex_style),
                 wide_class_name,
                 wide_text,
-                style,
+                WINDOW_STYLE(style),
                 self.location.get().x as c_int,
                 self.location.get().y as c_int,
                 self.size.get().width as c_int,
@@ -323,7 +325,7 @@ impl WindowBackend {
                 HINSTANCE(0),
                 ptr::null_mut(),
             ));
-            assert!(!self.handle.get().is_invalid());
+            assert!(self.handle.get() != HWND(0));
             WINDOWS.with(|windows| {
                 let mut windows = windows.borrow_mut();
                 let window = self.window.take();
@@ -338,7 +340,7 @@ impl WindowBackend {
     }
 
     fn is_handle_created(&self) -> bool {
-        !self.handle.get().is_invalid()
+        self.handle.get() != HWND(0)
     }
 
     fn handle(&self) -> HWND {
@@ -390,7 +392,7 @@ impl GenericWindowBackend for WindowBackend {
         if self.is_handle_created() {
             unsafe {
                 let mut text_buf = SmallVec::<[u16; 64]>::new();
-                let wide_text = PWSTR(str_to_wide_vec(text, &mut text_buf) as *mut _);
+                let wide_text = PCWSTR(str_to_wide_vec(text, &mut text_buf) as *mut _);
                 SetWindowTextW(self.handle.get(), wide_text);
             }
         }

@@ -1,8 +1,9 @@
 use std::cell::Cell;
 use std::ptr;
 
-use windows::Win32::Foundation::{HINSTANCE, PWSTR};
+use windows::Win32::Foundation::HINSTANCE;
 use windows::Win32::UI::WindowsAndMessaging::{HCURSOR, IMAGE_CURSOR, LR_SHARED, LR_DEFAULTSIZE, LoadImageW};
+use windows::core::{PWSTR, PCWSTR};
 
 use crate::cursor::Cursor;
 use crate::generic_backend::GenericCursorBackend;
@@ -17,8 +18,12 @@ pub struct CursorBackend {
 
 impl CursorBackend {
     unsafe fn load_cursor(cur_resource: u32) -> Self {
-        let hcur = HCURSOR(LoadImageW(HINSTANCE(0), PWSTR(MAKEINTRESOURCE(cur_resource)),
-        IMAGE_CURSOR, 0, 0, LR_SHARED | LR_DEFAULTSIZE).0);
+        let hcur = HCURSOR(
+            LoadImageW(
+                HINSTANCE(0), PCWSTR(MAKEINTRESOURCE(cur_resource)),
+                IMAGE_CURSOR,
+                0, 0, LR_SHARED | LR_DEFAULTSIZE
+            ).expect("LoadImageW() failed").0);
         Self {
             handle: Cell::new(hcur),
         }
