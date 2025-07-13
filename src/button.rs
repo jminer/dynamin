@@ -10,10 +10,12 @@ use std::ops::Deref;
 use std::rc::Rc;
 use std::slice::SliceIndex;
 
-use zaffre::{Brush, Color, PathBuf, Point2, Size2, StrokeStyle};
+use zaffre::text::{FormattedString, TextLayout, TextRectFramer};
+use zaffre::{font, Brush, Color, PathBuf, Point2, Rect, Size2, StrokeStyle};
 
-use crate::control::{Control, PaintingEvent, SubControl, SubControlData, SubControlRef, MouseUpEvent};
-use crate::event_vec::{EventRoute, EventHandler};
+use crate::control::{
+    Control, MouseUpEvent, PaintingEvent, SubControl, SubControlData, SubControlRef,
+};
 
 // TODO: generate with a proc macro
 // start proc macro generated
@@ -84,9 +86,32 @@ impl EventHandler for ButtonData {
             path.line_to(Point2::new(0.5f32, size.height - 0.5));
             path.close();
 
-            painter.stroke_path(&mut path.path_iter(),
+            painter.stroke_path(
+                &mut path.path_iter(),
                 &Brush::Solid(Color::from_rgba(128, 128, 128, 255)),
-                &StrokeStyle::with_width(1.0));
+                &StrokeStyle::with_width(1.0),
+            );
+
+            let font_family = font::get_family("DejaVu Sans")
+                .or_else(|| font::get_family("DejaVu Sans"))
+                .or_else(|| font::get_family("Helvetica"))
+                .or_else(|| font::get_family("Arial"))
+                .expect("couldn't find font");
+            let font = font_family.get_styles()[0].get_font(20.0);
+
+            // painter.draw_glyphs(
+            //     &[41, 42], &[Point2::new(0.0, 0.0), Point2::new(10.0, 0.0)], Point2::new(5.0, 5.0),
+            //     &font, &Brush::Solid(Color::from_rgba(160, 50, 255, 255)));
+
+            let mut text = FormattedString::new();
+            text.clear_and_set_text_from(&"First".to_owned());
+            text.set_initial_font(font);
+            let mut layout = TextLayout::new();
+            layout.set_text(text);
+            layout.layout(&mut TextRectFramer::new(Rect::new(
+                5.0, 5.0, 50_000.0, 30.0,
+            )));
+            layout.draw(&mut **painter);
         }
     }
 }
